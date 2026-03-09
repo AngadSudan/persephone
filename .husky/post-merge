@@ -1,0 +1,4 @@
+cd packages/db
+bunx prisma generate
+cd ../..
+bun install

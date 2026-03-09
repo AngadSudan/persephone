@@ -1,0 +1,22 @@
+{
+  "name": "@codex/redis",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "types": "./type.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "build": "bunx tsc -b"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "redis": "^5.10.0"
+  }
+}
