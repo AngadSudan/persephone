@@ -36,7 +36,30 @@ class GraphClient {
     );
   }
 
-  async createUserNode(username: string, options: UserObject) {}
+  async createUserNode(options: UserObject) {
+    const query = `
+      MERGE (n:User {email: $email})
+      SET
+        n.name = $name,
+        n.tagline = $tagline
+      RETURN n
+    `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, 
+        { name: options.name, email: options.email, tagline: options.tagline });
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+      
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
 
   async getUserNode(username: string) {
     const query = `
@@ -59,10 +82,90 @@ class GraphClient {
     }
   }
 
-  async deleteUserNode(username: string) {}
-  async createProjectNode(name: string, options: ProjectObject) {}
-  async getProjectNode(name: string) {}
-  async deleteProjectNode(name: string) {}
+  async deleteUserNode(username: string) {
+    const query = `
+      MATCH (n:User {name: $name})
+      DETACH DELETE n
+    `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, { name: username })
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
+  async createProjectNode(options: ProjectObject) {
+    const query = `
+      MERGE (p:Project {name: $projectName})
+      SET
+        p.liveLink = $projectLiveLink,
+        p.githubLink = $projectGithubLink
+      RETURN p
+    `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, 
+        { projectName: options.name, projectLiveLink: options.liveLink, projectGithubLink: options.githubLink});
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
+  async getProjectNode(name: string) {
+    const query = `
+      MATCH(p:Project {name: $projectName})
+      RETURN p
+    `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, { projectName: name });
+
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message)
+    } finally {
+      await session?.close();
+    }
+  }
+  async deleteProjectNode(name: string) {
+    const query = `
+      MATCH (p:Project {name: $projectName})
+      DETACH DELETE p
+    `;
+
+    const session = this.client?.session();
+      try {
+      const result = await session?.run(query, { projectName: name })
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
 
   async getSkill(name: string) {}
   async createSkill(name: string) {}
