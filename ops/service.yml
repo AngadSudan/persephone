@@ -1,14 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: k8s-interview-room-service
+  name: interview-room-service
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
-    app.kubernetes.io/name: interview-room
+    app: interview-room
   ports:
-    - name: code-server
-      protocol: TCP
+    - name: https
       port: 8443
       targetPort: 8443
-      nodePort: 30443
+      protocol: TCP
+    - name: app
+      port: 8000
+      targetPort: 8000
+      protocol: TCP

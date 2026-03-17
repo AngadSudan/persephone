@@ -11,11 +11,11 @@ interface ClusterConfig {
 
 class K8Service {
   kc: kubernetes.KubeConfig | null;
-  clusterName: string;
-  clusterURL: string;
-  userName: string;
-  userPassword: string;
-  currentUserName: string;
+  clusterName?: string;
+  clusterURL?: string;
+  userName?: string;
+  userPassword?: string;
+  currentUserName?: string;
   localCluster: boolean;
 
   constructor(config?: ClusterConfig) {

@@ -288,6 +288,17 @@ class InterviewController {
 
       if (!dbInterview) throw new Error("no such interview found");
 
+      const cachedInterviewData = await cacheClient.getCache(
+        `/active-interview/${dbInterview.slug}`,
+      );
+      let interviewData = JSON.parse(cachedInterviewData);
+      const chat = interviewData.chat;
+
+      // TODO: update the chat
+      await prismaClient.interviewChat.createMany({
+        data: chat,
+      });
+
       const updatedInterview = await prismaClient.interview.update({
         where: {
           id: dbInterview.id,

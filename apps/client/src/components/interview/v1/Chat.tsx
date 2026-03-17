@@ -24,7 +24,9 @@ export default function Chat({
 
   const onSubmit = () => {
     if (!input.trim()) return;
-
+    if (!currentUserId) {
+      console.log("current user id not found");
+    }
     const newMessage: Message = {
       author: currentUserId,
       message: input,

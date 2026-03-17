@@ -4,15 +4,7 @@ import yaml from "yaml";
 import K8Service from "../service/k8s.service";
 
 const serviceInstance = new K8Service({
-  localCluster: false,
-
-  clusterName: "kind-codex",
-  clusterURL: "https://127.0.0.1:42669",
-
-  userName: "dashboard-admin",
-  userPassword:
-    "eyJhbGciOiJSUzI1NiIsImtpZCI6IlNmcVpsSktXSXJxcW84VDN2TGMxdC1maUpyamdzUnFCZzZ6cTA2UGZVVXcifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzcwOTc1NzQ5LCJpYXQiOjE3NzA5NzIxNDksImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsInNlcnZpY2VhY2NvdW50Ijp7Im5hbWUiOiJkYXNoYm9hcmQtYWRtaW4iLCJ1aWQiOiIzOGNjY2I1OS1iZmZkLTQ4OGEtOTg2My1mZmY1NGVlN2NlNDgifX0sIm5iZiI6MTc3MDk3MjE0OSwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50Omt1YmVybmV0ZXMtZGFzaGJvYXJkOmRhc2hib2FyZC1hZG1pbiJ9.A_Ru0a8eGsQ1omOo04jIZfwTe9IHeWjtUPXPcAhnk1SN0y3V7XsWxVD7Ca0A6GA2lzTEd3UyT6fqe9Z6JxwNWbHY9XAXZ2I3i5yljDPzMxwXMRTpdZfQV_8tDez1MbyF3MIv3-3cXQheW6QOcTmDWfrqlh0GSKgpF1r6eyU-TWrhnh7yVbXBS3sfu_6YxRiNuJResdjo5A3Are8xrUFeUeKDXvzfOV0uDWcw7Fo509F5OV6-zG9Nl7iDeFnAnJi4vx2w5lwaZapE6JWZbDFuXE2cxA2WoaJRr1q4baYC6X858ILtLv-kABIfpRrTenMDZQZqFN4gYUFQh95DFjth7Q",
-  currentUserName: "kind-codex",
+  localCluster: true,
 });
 
 async function main() {
@@ -37,6 +29,7 @@ async function main() {
     console.log(service.metadata?.name, service.metadata?.namespace);
 
     let ingressConf = ingressConfig.replaceAll("_podname_", "testing-pod");
+    ingressConf = ingressConf.replaceAll("_slug_", "testing");
     const ingressManifest = yaml.parse(ingressConf);
 
     const ingress = await serviceInstance.addNewIngress(
@@ -45,30 +38,31 @@ async function main() {
     );
     console.log(ingress.metadata?.name, ingress.metadata?.namespace);
 
+    console.log(JSON.stringify(ingressManifest, null, 2));
     await Promise.resolve(() => {
       setTimeout(() => {}, 3000);
     });
 
-    await serviceInstance.removePod(
-      pod.metadata?.namespace!,
-      pod.metadata?.name!,
-    );
+    // await serviceInstance.removePod(
+    //   pod.metadata?.namespace!,
+    //   pod.metadata?.name!,
+    // );
 
-    console.log("pod removed");
+    // console.log("pod removed");
 
-    await serviceInstance.removeService(
-      service.metadata?.namespace!,
-      service.metadata?.name!,
-    );
+    // await serviceInstance.removeService(
+    //   service.metadata?.namespace!,
+    //   service.metadata?.name!,
+    // );
 
-    console.log("service removed");
+    // console.log("service removed");
 
-    await serviceInstance.removeIngress(
-      ingress.metadata?.namespace!,
-      ingress.metadata?.name!,
-    );
+    // await serviceInstance.removeIngress(
+    //   ingress.metadata?.namespace!,
+    //   ingress.metadata?.name!,
+    // );
 
-    console.log("ingress removed");
+    // console.log("ingress removed");
   } catch (err) {
     console.error("Kubernetes operation failed:", err);
   }

@@ -6,6 +6,8 @@ metadata:
   labels:
     app: _podlabel_
 spec:
+  tolerations:
+    - operator: Exists
   containers:
     - name: interview-room
       image: bitwiselearn/codex:js-container
@@ -37,18 +39,32 @@ export const ingressConfig = `
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: _podname_-pod-ingress
+  name: interview-room-ingress-_slug_
   annotations:
-    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-wildcard
 spec:
+  ingressClassName: nginx
+
   rules:
-    - http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: _podname_-pod-service
-                port:
-                  number: 80
+  - host: "_slug_.code.angadsudan.me"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: _podname_-pod-service
+            port:
+              number: 443
+
+  - host: "_slug_.output.angadsudan.me"
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: _podname_-pod-service
+            port:
+              number: 80
 `;
