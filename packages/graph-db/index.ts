@@ -7,6 +7,7 @@ interface UserObject {
 }
 
 interface ProjectObject {
+  id: string;
   name: string;
   liveLink: string;
   githubLink: string;
@@ -17,6 +18,7 @@ interface SkillObject {
 }
 
 interface JobObject {
+  companyId: string;
   name: string;
   stipend: string;
 }
@@ -48,11 +50,14 @@ class GraphClient {
     const session = this.client?.session();
 
     try {
-      const result = await session?.run(query, 
-        { name: options.name, email: options.email, tagline: options.tagline });
+      const result = await session?.run(query, {
+        name: options.name,
+        email: options.email,
+        tagline: options.tagline,
+      });
       console.log(JSON.stringify(result?.records, null, 2));
       console.log(JSON.stringify(result?.summary, null, 2));
-      
+
       return result?.records;
     } catch (error: any) {
       throw new Error(error.message);
@@ -91,7 +96,7 @@ class GraphClient {
     const session = this.client?.session();
 
     try {
-      const result = await session?.run(query, { name: username })
+      const result = await session?.run(query, { name: username });
       console.log(JSON.stringify(result?.records, null, 2));
       console.log(JSON.stringify(result?.summary, null, 2));
 
@@ -114,8 +119,11 @@ class GraphClient {
     const session = this.client?.session();
 
     try {
-      const result = await session?.run(query, 
-        { projectName: options.name, projectLiveLink: options.liveLink, projectGithubLink: options.githubLink});
+      const result = await session?.run(query, {
+        projectName: options.name,
+        projectLiveLink: options.liveLink,
+        projectGithubLink: options.githubLink,
+      });
       console.log(JSON.stringify(result?.records, null, 2));
       console.log(JSON.stringify(result?.summary, null, 2));
 
@@ -142,7 +150,7 @@ class GraphClient {
 
       return result?.records;
     } catch (error: any) {
-      throw new Error(error.message)
+      throw new Error(error.message);
     } finally {
       await session?.close();
     }
@@ -154,8 +162,8 @@ class GraphClient {
     `;
 
     const session = this.client?.session();
-      try {
-      const result = await session?.run(query, { projectName: name })
+    try {
+      const result = await session?.run(query, { projectName: name });
       console.log(JSON.stringify(result?.records, null, 2));
       console.log(JSON.stringify(result?.summary, null, 2));
 
@@ -167,24 +175,245 @@ class GraphClient {
     }
   }
 
-  async getSkill(name: string) {}
-  async createSkill(name: string) {}
-  async deleteSkill(name: string) {}
+  async getSkill(skillName: string) {
+    const query = `
+      MATCH(s:Skill {name: $name})
+      return s
+    `;
 
-  async createJobListing(name: string, options: JobObject) {}
-  async getJobListing(name: string) {}
-  async deleteJobListing(name: string) {}
+    const session = this.client?.session();
 
-  async makeRelationBetweenUser(user1: string, user2: string) {}
+    try {
+      const result = await session?.run(query, { name: skillName });
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
+  async createSkill(skillName: string) {
+    const query = `
+      MERGE (s:Skill {name: $name})
+      RETURN s
+    `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, { name: skillName });
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
+  async deleteSkill(skillName: string) {
+    const query = `
+      MATCH (s:Skill {name: $skillName})
+      DETACH DELETE s
+    `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, { name: skillName });
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
+
+  async createJobListing(options: JobObject) {
+    const query = `
+      MERGE (j:JobListing {companyId: $companyId, name: $name})
+      SET
+        j.name = $name,
+        j.stipend = $stipend
+      RETURN j
+    `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, {
+        companyId: options.companyId,
+        name: options.name,
+        stipend: options.stipend,
+      });
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
+  async getJobListing(companyId: string, name: string) {
+    const query = `
+      MATCH(j:JobListing {name: $jobName, companyId: $id})
+      return j
+    `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, {
+        jobName: name,
+        id: companyId,
+      });
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.records;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
+  async deleteJobListing(companyId: string, name: string) {
+    const query = `
+    MATCH (j:JobListing {companyId: $companyId, name: $name})
+    DETACH DELETE j
+  `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, { companyId, name });
+
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.summary;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
+
+  async makeRelationBetweenUser(email1: string, email2: string) {
+    const query = `
+      MATCH (u1:User {email: $email1})
+      MATCH (u2:User {email: $email2})
+      MERGE (u1)-[:FRIEND]->(u2)
+      RETURN u1, u2
+    `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, { email1, email2 });
+
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.summary;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
   async makeRelationBetweenUserandProject(
-    username: string,
-    projectName: string,
-  ) {}
+    userEmail: string,
+    projectId: string,
+  ) {
+    const query = `
+    MATCH (u:User {email: $userEmail})
+    MATCH (p:Project {projectId: $projectId})
+    MERGE (u)-[:CREATED]->(p)
+    RETURN u, p
+  `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, { userEmail, projectId });
+
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.summary;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
   async makeRelationBetweenProjectandSkills(
-    projectName: string,
+    projectId: string,
     skillName: string,
-  ) {}
-  async makeRelationBetweenJobandSkills(jobName: string, skillname: string) {}
+  ) {
+    const query = `
+    MATCH (p:Project {projectId: $projectId})
+    MATCH (s:Skill {name: $skillName})
+    MERGE (p)-[:USES]->(s)
+    RETURN p, s
+  `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, { projectId, skillName });
+
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.summary;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
+  async makeRelationBetweenJobandSkills(
+    companyId: string,
+    jobName: string,
+    skillName: string,
+  ) {
+    const query = `
+    MATCH (j:JobListing {companyId: $companyId, name: $jobName})
+    MATCH (s:Skill {name: $skillName})
+    MERGE (j)-[:REQUIRES]->(s)
+    RETURN j, s
+  `;
+
+    const session = this.client?.session();
+
+    try {
+      const result = await session?.run(query, {
+        companyId,
+        jobName,
+        skillName,
+      });
+
+      console.log(JSON.stringify(result?.records, null, 2));
+      console.log(JSON.stringify(result?.summary, null, 2));
+
+      return result?.summary;
+    } catch (error: any) {
+      throw new Error(error.message);
+    } finally {
+      await session?.close();
+    }
+  }
 }
 
 export default GraphClient;
