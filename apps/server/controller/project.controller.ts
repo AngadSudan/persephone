@@ -3,6 +3,7 @@ import apiResponse from "../utils/apiResponse";
 import prismaClient from "../utils/prisma";
 import type { projectPayload } from "../utils/type";
 import cloudinaryService from "../service/Cloudinary.service";
+import graphService from "../service/graph.service";
 
 class ProjectController {
   async createProject(req: Request<{}, {}, projectPayload>, res: Response) {
@@ -26,10 +27,9 @@ class ProjectController {
       }
 
       const skills = data.skills?.map((skill) => skill.trim());
-
       // TODO: Upload file to cloudinary.
       let coverImageUrl = "";
-
+      
       const newProject = await prismaClient.projects.create({
         data: {
           title,
@@ -43,12 +43,14 @@ class ProjectController {
           visibility: data.visibility,
           publishStatus: data.publishStatus,
           publishTime: data.publishTime
-            ? new Date(data.publishTime)
-            : new Date(),
+          ? new Date(data.publishTime)
+          : new Date(),
           skills,
           ownerId: userId,
         },
       });
+      
+      await graphService.addUserProject(newProject.id,userId,skills);
 
       return res
         .status(201)
