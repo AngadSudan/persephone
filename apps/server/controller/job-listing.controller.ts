@@ -5,7 +5,7 @@ import type { JobListing } from "../utils/type";
 import type { JobApplication } from "../utils/type";
 import cacheClient from "../utils/redis";
 import cloudinaryService from "../service/Cloudinary.service";
-
+import graphService from "../service/graph.service";
 class JobListingController {
   async createJobListing(req: Request, res: Response) {
     try {
@@ -31,7 +31,7 @@ class JobListingController {
       });
 
       await cacheClient.invalidateCache(`/jobListing/${orgId}`);
-
+      await graphService.addJobListing(); // params to be passed.
       return res
         .status(201)
         .json(
