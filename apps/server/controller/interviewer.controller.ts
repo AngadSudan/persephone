@@ -4,6 +4,18 @@ import prismaClient from "../utils/prisma";
 import type { UpdateInterviewer, } from "../utils/type";
 import cloudinaryService from "../service/Cloudinary.service";
 import { parse } from "yaml";
+import {
+    getCacheSafe,
+    invalidateManyCacheKeysSafe,
+    setCacheSafe,
+} from "../utils/cache";
+
+const getInterviewerProfileCacheKey = (interviewerId: string) =>
+    `/interviewers/${interviewerId}:profile`;
+
+const invalidateInterviewerCaches = async (interviewerId: string): Promise<void> => {
+    await invalidateManyCacheKeysSafe([getInterviewerProfileCacheKey(interviewerId)]);
+};
 
 class InterviewerController {
     async updateUserInfo(req: Request, res: Response) {
@@ -36,6 +48,8 @@ class InterviewerController {
                 },
             });
             if (!updatedInterviewer) throw new Error("Failed User Updation");
+
+            await invalidateInterviewerCaches(interviewerId);
 
             return res
                 .status(200)
@@ -72,6 +86,8 @@ class InterviewerController {
             if (!updatedProfilePic)
                 throw new Error("Unable to  update profile picture");
 
+            await invalidateInterviewerCaches(interviewerId);
+
             return res
                 .status(200)
                 .json(apiResponse(200, "Updated Profile Picture", updatedProfilePic));
@@ -107,6 +123,8 @@ class InterviewerController {
 
             if (!updatedBanner) throw new Error("Unable to update Banner");
 
+            await invalidateInterviewerCaches(interviewerId);
+
             return res
                 .status(200)
                 .json(apiResponse(200, "Updated Banner", updatedBanner));
@@ -119,6 +137,15 @@ class InterviewerController {
         try {
             const interviewerId = req.user?.id;
             if (!interviewerId) throw new Error("Interviewer id is required");
+
+            const interviewerProfileCacheKey = getInterviewerProfileCacheKey(interviewerId);
+            const cachedProfile = await getCacheSafe(interviewerProfileCacheKey);
+
+            if (cachedProfile !== null) {
+                return res
+                    .status(200)
+                    .json(apiResponse(200, "Interviewer data found (Cache)", cachedProfile));
+            }
 
             const interviewerData = await prismaClient.interviewer.findFirst({
                 where: {
@@ -140,6 +167,8 @@ class InterviewerController {
             });
 
             if (!interviewerData) throw new Error("Unable to fetch interviewer data");
+
+            await setCacheSafe(interviewerProfileCacheKey, interviewerData);
 
             return res
                 .status(200)

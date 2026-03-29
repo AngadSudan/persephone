@@ -3,6 +3,23 @@ import apiResponse from "../utils/apiResponse";
 import cloudinaryService from "../service/Cloudinary.service";
 import prismaClient from "../utils/prisma";
 import type { updateOrganization, updateInterviewer, createInterviewer } from "../utils/type";
+import {
+  getCacheSafe,
+  invalidateManyCacheKeysSafe,
+  setCacheSafe,
+} from "../utils/cache";
+
+const getOrganizationProfileCacheKey = (orgId: string) =>
+  `/organizations/${orgId}:profile`;
+const getOrganizationInterviewersCacheKey = (orgId: string) =>
+  `/organizations/${orgId}:interviewers`;
+
+const invalidateOrganizationCaches = async (orgId: string): Promise<void> => {
+  await invalidateManyCacheKeysSafe([
+    getOrganizationProfileCacheKey(orgId),
+    getOrganizationInterviewersCacheKey(orgId),
+  ]);
+};
 
 class OrganizationController {
   async OrgProfilePicUpdate(req: Request, res: Response) {
@@ -27,6 +44,8 @@ class OrganizationController {
       });
 
       if (!updatedProfilePic) throw new Error("Unable to update Profile Picture");
+
+      await invalidateOrganizationCaches(userId);
 
       return res.status(200).json(
         apiResponse(200, "Updated Profile Picture", updatedProfilePic),
@@ -57,6 +76,8 @@ class OrganizationController {
         }
       });
       if (!updatedOrgBanner) throw new Error("Unable to Update banner");
+
+      await invalidateOrganizationCaches(userId);
 
       return res.status(200).json(
         apiResponse(200, "Updated banner", updatedOrgBanner),
@@ -94,6 +115,8 @@ class OrganizationController {
           tagline: tagline ?? dbOrganization.tagline,
         },
       });
+
+      await invalidateOrganizationCaches(userId);
 
       return res
         .status(200)
@@ -136,6 +159,8 @@ class OrganizationController {
       });
 
       if (!newInterviewer) throw new Error("Unable to create interviewer");
+
+      await invalidateOrganizationCaches(userId);
 
       return res.status(200).json(
         apiResponse(200, "Created Interviewer", newInterviewer)
@@ -188,6 +213,8 @@ class OrganizationController {
         throw new Error("Unable to update Interviewer");
       }
 
+      await invalidateOrganizationCaches(userId);
+
       return res.status(200).json(
         apiResponse(200, "Updated Interviewer", updatedInterviewer)
       );
@@ -209,6 +236,8 @@ class OrganizationController {
         }
       });
       if (!deletedInterviewer) throw new Error("Unable to delete");
+
+      await invalidateOrganizationCaches(userId);
 
       return res.status(200).json(
         apiResponse(200, "Deleted Interviewer", deletedInterviewer),
@@ -239,6 +268,8 @@ class OrganizationController {
 
       if (!updatedProfilePic) throw new Error("Unable to update Profile Picture");
 
+      await invalidateOrganizationCaches(userId);
+
       return res.status(200).json(
         apiResponse(200, "Updated Profile Picture", updatedProfilePic),
       );
@@ -268,6 +299,8 @@ class OrganizationController {
 
       if (!updatedBanner) throw new Error("Unable to update Banner");
 
+      await invalidateOrganizationCaches(userId);
+
       return res.status(200).json(
         apiResponse(200, "Updated banner", updatedBanner),
       );
@@ -288,6 +321,13 @@ class OrganizationController {
       const orgId = req.user?.id;
       if (!orgId) throw new Error("Organization id not found");
 
+      const orgProfileCacheKey = getOrganizationProfileCacheKey(orgId);
+      const cachedOrg = await getCacheSafe(orgProfileCacheKey);
+
+      if (cachedOrg !== null) {
+        return res.status(200).json(apiResponse(200, "Organization fetched (Cache)", cachedOrg));
+      }
+
       const org = await prismaClient.organization.findUnique({
         where: { id: orgId },
         select: {
@@ -304,6 +344,8 @@ class OrganizationController {
       if (!org) {
         return res.status(404).json(apiResponse(404, "Organization not found", null));
       }
+
+      await setCacheSafe(orgProfileCacheKey, org);
 
       return res.status(200).json(apiResponse(200, "Organization fetched", org));
     } catch (error: any) {
@@ -326,6 +368,15 @@ class OrganizationController {
       const orgId = req.user?.id;
       if (!orgId) throw new Error("Organization id not found");
 
+      const interviewersCacheKey = getOrganizationInterviewersCacheKey(orgId);
+      const cachedInterviewers = await getCacheSafe(interviewersCacheKey);
+
+      if (cachedInterviewers !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "Interviewers fetched (Cache)", cachedInterviewers));
+      }
+
       const interviewers = await prismaClient.interviewer.findMany({
         where: { orgId },
         select: {
@@ -337,6 +388,8 @@ class OrganizationController {
         },
         orderBy: { createdAt: "desc" },
       });
+
+      await setCacheSafe(interviewersCacheKey, interviewers);
 
       return res
         .status(200)
