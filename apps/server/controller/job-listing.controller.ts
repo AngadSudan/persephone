@@ -3,13 +3,27 @@ import prismaClient from "../utils/prisma";
 import apiResponse from "../utils/apiResponse";
 import type { JobListing } from "../utils/type";
 import type { JobApplication } from "../utils/type";
-import cacheClient from "../utils/redis";
 import cloudinaryService from "../service/Cloudinary.service";
+
 import graphService from "../service/graph.service";
+
+import {
+  getCacheSafe,
+  invalidateCacheSafe,
+  setCacheSafe,
+} from "../utils/cache";
+
+const getOrgJobListingsCacheKey = (orgId: string) => `/jobListing/org/${orgId}`;
+const getJobListingByIdCacheKey = (jobId: string) => `/jobListing/id/${jobId}`;
+const getJobApplicationsCacheKey = (jobId: string) => `/jobApplication/${jobId}`;
+const getInterviewSuiteApplicationsPageZeroCacheKey = (jobId: string) =>
+  `/job-listing/${jobId}/application?pageNumber=0`;
+
+
 class JobListingController {
   async createJobListing(req: Request, res: Response) {
     try {
-      const orgId = req.user?.id;
+      const orgId = (req.user as any)?.id;
       const data: JobListing = req.body;
 
       if (!orgId) {
@@ -29,9 +43,9 @@ class JobListingController {
           organizationId: orgId,
         },
       });
-
-      await cacheClient.invalidateCache(`/jobListing/${orgId}`);
       await graphService.addJobListing(); // params to be passed.
+      await invalidateCacheSafe(getOrgJobListingsCacheKey(orgId));
+
       return res
         .status(201)
         .json(
@@ -44,8 +58,8 @@ class JobListingController {
   }
   async updateJobListing(req: Request, res: Response) {
     try {
-      const { jobListId } = req.params;
-      const organization = req.user;
+      const jobListId = String(req.params.jobListId);
+      const organization = req.user as any;
       const data = req.body;
 
       if (organization?.type !== "ORGANIZATION") {
@@ -54,7 +68,7 @@ class JobListingController {
         );
       }
 
-      if (!jobListId) {
+      if (!req.params.jobListId) {
         return res
           .status(400)
           .json(apiResponse(400, "Job Listing ID is Required", null));
@@ -84,9 +98,9 @@ class JobListingController {
         },
       });
 
-      await cacheClient.invalidateCache(`/jobListing/${organization.id}`);
+      await invalidateCacheSafe(getOrgJobListingsCacheKey(organization.id));
 
-      await cacheClient.invalidateCache(`/jobListing/${jobListId}`);
+      await invalidateCacheSafe(getJobListingByIdCacheKey(jobListId));
 
       return res
         .status(200)
@@ -100,21 +114,21 @@ class JobListingController {
   }
   async deleteJobListing(req: Request, res: Response) {
     try {
-      const { jobListId } = req.params;
-      const organization = req.user;
+      const jobListId = String(req.params.jobListId);
+      const organization = req.user as any;
       const resumeFile = req.file;
 
       if (organization?.type !== "ORGANIZATION")
         throw new Error("Only Organizations can Delete Job Listing");
 
-      if (!jobListId) {
+      if (!req.params.jobListId) {
         return res
           .status(400)
           .json(apiResponse(400, "Job List ID Missing", null));
       }
 
-      await cacheClient.invalidateCache(`/jobListing/${organization.id}`);
-      await cacheClient.invalidateCache(`/jobListing/${jobListId}`);
+      await invalidateCacheSafe(getOrgJobListingsCacheKey(organization.id));
+      await invalidateCacheSafe(getJobListingByIdCacheKey(jobListId));
 
       const job = await prismaClient.jobListing.findUnique({
         where: {
@@ -144,10 +158,10 @@ class JobListingController {
   }
   async viewApplications(req: Request, res: Response) {
     try {
-      const user = req.user;
-      const { jobListId } = req.params;
+      const user = req.user as any;
+      const jobListId = String(req.params.jobListId);
 
-      if (!jobListId) {
+      if (!req.params.jobListId) {
         return res
           .status(400)
           .json(apiResponse(400, "Job Listing ID is Required !", null));
@@ -175,11 +189,11 @@ class JobListingController {
           .json(apiResponse(403, "Not your Job Listing", null));
       }
 
-      const cacheJobApplication = await cacheClient.getCache(
-        `/jobApplication/${jobListId}`,
+      const cacheJobApplication = await getCacheSafe(
+        getJobApplicationsCacheKey(jobListId),
       );
 
-      if (cacheJobApplication) {
+      if (cacheJobApplication !== null) {
         return res
           .status(200)
           .json(
@@ -207,10 +221,7 @@ class JobListingController {
         },
       });
 
-      await cacheClient.setCache(
-        `/jobApplication/${jobListId}`,
-        jobApplications,
-      );
+      await setCacheSafe(getJobApplicationsCacheKey(jobListId), jobApplications);
 
       return res
         .status(200)
@@ -228,7 +239,7 @@ class JobListingController {
   }
   async getAllJobListings(req: Request, res: Response) {
     try {
-      const orgId = req.user?.id;
+      const orgId = (req.user as any)?.id;
 
       if (!orgId) {
         return res
@@ -236,11 +247,11 @@ class JobListingController {
           .json(apiResponse(400, "Organization ID not Found !", null));
       }
 
-      const cacheJobApplication = await cacheClient.getCache(
-        `/jobListing/${orgId}`,
+      const cacheJobApplication = await getCacheSafe(
+        getOrgJobListingsCacheKey(orgId),
       );
 
-      if (cacheJobApplication) {
+      if (cacheJobApplication !== null) {
         return res
           .status(200)
           .json(
@@ -304,7 +315,7 @@ class JobListingController {
         totalApplicants: job._count.jobApplications,
       }));
 
-      await cacheClient.setCache(`/jobListing/${orgId}`, formattedJobs);
+      await setCacheSafe(getOrgJobListingsCacheKey(orgId), formattedJobs);
 
       return res
         .status(200)
@@ -316,19 +327,19 @@ class JobListingController {
   }
   async getJobListingById(req: Request, res: Response) {
     try {
-      const { jobId } = req.params;
+      const jobId = String(req.params.jobId);
 
-      if (!jobId) {
+      if (!req.params.jobId) {
         return res
           .status(400)
           .json(apiResponse(400, "Job ID is Missing !", null));
       }
 
-      const cacheJobListing = await cacheClient.getCache(
-        `/jobListing/${jobId}`,
+      const cacheJobListing = await getCacheSafe(
+        getJobListingByIdCacheKey(jobId),
       );
 
-      if (cacheJobListing) {
+      if (cacheJobListing !== null) {
         return res
           .status(200)
           .json(apiResponse(200, "Job Listing By Id (Cache)", cacheJobListing));
@@ -354,7 +365,7 @@ class JobListingController {
           .json(apiResponse(404, "Job Listing Not Found !", null));
       }
 
-      await cacheClient.setCache(`/jobListing/${jobId}`, jobListing);
+      await setCacheSafe(getJobListingByIdCacheKey(jobId), jobListing);
 
       return res
         .status(200)
@@ -368,8 +379,8 @@ class JobListingController {
   }
   async applyToJob(req: Request, res: Response) {
     try {
-      const user = req.user;
-      const { jobId } = req.params;
+      const user = req.user as any;
+      const jobId = String(req.params.jobId);
       const data: JobApplication = req.body;
       const resumeFile = req.file;
 
@@ -385,7 +396,7 @@ class JobListingController {
           .json(apiResponse(400, "Resume is Required !", null));
       }
 
-      if (!jobId) {
+      if (!req.params.jobId) {
         return res
           .status(400)
           .json(apiResponse(400, "Job ID not Found !", null));
@@ -432,7 +443,8 @@ class JobListingController {
         },
       });
 
-      await cacheClient.invalidateCache(`/jobApplication/${jobId}`);
+      await invalidateCacheSafe(getJobApplicationsCacheKey(jobId));
+      await invalidateCacheSafe(getInterviewSuiteApplicationsPageZeroCacheKey(jobId));
 
       return res
         .status(201)

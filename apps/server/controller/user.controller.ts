@@ -11,6 +11,74 @@ import cloudinaryService from "../service/Cloudinary.service";
 import GithubService from "../service/github.service";
 import aiService from "../service/ai.service";
 import { parse } from "yaml";
+import cacheClient from "../utils/redis";
+
+const getFullUserProfileCacheKey = (userId: string) =>
+  `/users/${userId}:profile:full`;
+const getPublicUserProfileCacheKey = (username: string) =>
+  `/users/${username}:profile:public`;
+const getUserGraphCacheKey = (userId: string) => `/users/${userId}:graph`;
+
+const parseCachedValue = <T>(cachedValue: unknown): T | null => {
+  if (cachedValue === null || cachedValue === undefined) {
+    return null;
+  }
+
+  if (typeof cachedValue === "string") {
+    try {
+      return JSON.parse(cachedValue) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  return cachedValue as T;
+};
+
+const getCacheSafe = async <T>(key: string): Promise<T | null> => {
+  try {
+    const cachedValue = await cacheClient.getCache(key);
+    return parseCachedValue<T>(cachedValue);
+  } catch (error: any) {
+    console.error(`Cache read failed for key ${key}:`, error?.message || error);
+    return null;
+  }
+};
+
+const setCacheSafe = async (key: string, value: unknown): Promise<void> => {
+  try {
+    await cacheClient.setCache(key, value);
+  } catch (error: any) {
+    console.error(`Cache write failed for key ${key}:`, error?.message || error);
+  }
+};
+
+const invalidateCacheSafe = async (key: string): Promise<void> => {
+  try {
+    await cacheClient.invalidateCache(key);
+  } catch (error: any) {
+    console.error(
+      `Cache invalidation failed for key ${key}:`,
+      error?.message || error,
+    );
+  }
+};
+
+const invalidateUserCaches = async (
+  userId: string,
+  username?: string | null,
+): Promise<void> => {
+  const keysToInvalidate = [
+    getFullUserProfileCacheKey(userId),
+    getUserGraphCacheKey(userId),
+  ];
+
+  if (username) {
+    keysToInvalidate.push(getPublicUserProfileCacheKey(username));
+  }
+
+  await Promise.all(keysToInvalidate.map((key) => invalidateCacheSafe(key)));
+};
 
 class UserController {
   async updateUserInfo(req: Request, res: Response) {
@@ -43,6 +111,8 @@ class UserController {
         },
       });
       if (!updatedUser) throw new Error("Failed User Updation");
+
+      await invalidateUserCaches(userId, updatedUser.username);
 
       return res
         .status(200)
@@ -80,6 +150,8 @@ class UserController {
       // TODO: handle resume parsing
       if (!updateResume) throw new Error("Unable to update Resume");
 
+      await invalidateUserCaches(userId, updateResume.username);
+
       return res
         .status(200)
         .json(apiResponse(200, "Updated Resume", updateResume));
@@ -111,6 +183,8 @@ class UserController {
         where: { id: userId },
         data: { resume: null },
       });
+
+      await invalidateUserCaches(userId, updatedUser.username);
 
       return res
         .status(200)
@@ -147,6 +221,8 @@ class UserController {
       if (!updatedProfilePic)
         throw new Error("Unable to  update profile picture");
 
+      await invalidateUserCaches(userId, updatedProfilePic.username);
+
       return res
         .status(200)
         .json(apiResponse(200, "Updated Profile Picture", updatedProfilePic));
@@ -182,6 +258,8 @@ class UserController {
 
       if (!updatedBanner) throw new Error("Unable to update Banner");
 
+      await invalidateUserCaches(userId, updatedBanner.username);
+
       return res
         .status(200)
         .json(apiResponse(200, "Updated Banner", updatedBanner));
@@ -194,6 +272,15 @@ class UserController {
     try {
       const userId = req.user?.id;
       if (!userId) throw new Error("User id is required");
+
+      const userProfileCacheKey = getFullUserProfileCacheKey(userId);
+      const cachedUserData = await getCacheSafe(userProfileCacheKey);
+
+      if (cachedUserData !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "User data found (Cache)", cachedUserData));
+      }
 
       const userData = await prismaClient.user.findFirst({
         where: {
@@ -226,6 +313,8 @@ class UserController {
 
       if (!userData) throw new Error("Unable to fetch user data");
 
+      await setCacheSafe(userProfileCacheKey, userData);
+
       return res
         .status(200)
         .json(apiResponse(200, "User data found", userData));
@@ -238,6 +327,15 @@ class UserController {
     try {
       const userId = req.params.id;
       if (!userId) throw new Error("User id is required");
+
+      const publicProfileCacheKey = getPublicUserProfileCacheKey(userId as string);
+      const cachedUserData = await getCacheSafe(publicProfileCacheKey);
+
+      if (cachedUserData !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "User data found (Cache)", cachedUserData));
+      }
 
       const userData = await prismaClient.user.findFirst({
         where: {
@@ -273,6 +371,8 @@ class UserController {
       });
 
       if (!userData) throw new Error("Unable to fetch user data");
+
+      await setCacheSafe(publicProfileCacheKey, userData);
 
       return res
         .status(200)
@@ -342,6 +442,8 @@ class UserController {
           userId: dbUser.id,
         },
       });
+
+      await invalidateUserCaches(userId, dbUser.username);
 
       return res
         .status(200)
@@ -503,6 +605,17 @@ class UserController {
 
       if (!updatedExperience) throw new Error("Failed Experience Updation");
 
+      const dbUser = await prismaClient.user.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          username: true,
+        },
+      });
+
+      await invalidateUserCaches(userId, dbUser?.username);
+
       return res
         .status(200)
         .json(apiResponse(200, "Experience updated", updatedExperience));
@@ -544,6 +657,17 @@ class UserController {
           id: experienceId,
         },
       });
+
+      const dbUser = await prismaClient.user.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          username: true,
+        },
+      });
+
+      await invalidateUserCaches(userId, dbUser?.username);
 
       return res
         .status(200)
@@ -593,6 +717,8 @@ class UserController {
       });
 
       if (!updatedPlatformLinks) throw new Error("Unable to update Links");
+
+      await invalidateUserCaches(userId, updatedPlatformLinks.username);
 
       return res
         .status(200)
@@ -714,6 +840,8 @@ class UserController {
         });
       }
 
+      await invalidateUserCaches(dbUser.id, dbUser.username);
+
       return res.status(200).json(apiResponse(200, "graph generated", data));
     } catch (error: any) {
       console.log(error);
@@ -733,11 +861,27 @@ class UserController {
       if (!dbUser.githubToken)
         throw new Error("pleases Connect with github first");
 
+      const userGraphCacheKey = getUserGraphCacheKey(dbUser.id);
+      const cachedGraph = await getCacheSafe<{
+        isConnected: boolean;
+        graphPoints: number[];
+      }>(userGraphCacheKey);
+
+      if (cachedGraph !== null) {
+        return res.status(200).json(apiResponse(200, "graph fetched (Cache)", cachedGraph));
+      }
+
       const dbGraph = await prismaClient.developerGraph.findFirst({
         where: { userId: dbUser.id },
       });
 
       if (!dbGraph) {
+        const emptyGraph = {
+          isConnected: true,
+          graphPoints: [0, 0, 0, 0, 0],
+        };
+        await setCacheSafe(userGraphCacheKey, emptyGraph);
+
         return res.status(200).json(
           apiResponse(200, "graph fetched", {
             isConnected: true,
@@ -746,17 +890,21 @@ class UserController {
         );
       }
 
+      const graphPayload = {
+        isConnected: true,
+        graphPoints: [
+          dbGraph.systemDesign,
+          dbGraph.backend,
+          dbGraph.frontend,
+          dbGraph.tools,
+          dbGraph.devops,
+        ],
+      };
+
+      await setCacheSafe(userGraphCacheKey, graphPayload);
+
       return res.status(200).json(
-        apiResponse(200, "graph fetched", {
-          isConnected: true,
-          graphPoints: [
-            dbGraph.systemDesign,
-            dbGraph.backend,
-            dbGraph.frontend,
-            dbGraph.tools,
-            dbGraph.devops,
-          ],
-        }),
+        apiResponse(200, "graph fetched", graphPayload),
       );
     } catch (error: any) {
       console.log(error);

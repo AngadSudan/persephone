@@ -2,24 +2,52 @@ import type { Request, Response } from "express";
 import apiResponse from "../utils/apiResponse";
 import prismaClient from "../utils/prisma";
 import generateSlug from "../utils/slug";
-import cacheClient from "../utils/redis";
 import videoConfrencingService from "../service/videoConfrencing.service";
+import {
+  getCacheSafe,
+  invalidateManyCacheKeysSafe,
+  setCacheSafe,
+} from "../utils/cache";
+
+const getRoundInterviewsCacheKey = (roundId: string) => `/interviews/round/${roundId}`;
+const getInterviewDetailCacheKey = (interviewId: string) => `/interviews/${interviewId}`;
+const getUserInterviewsCacheKey = (userId: string) => `/interviews/user/${userId}`;
+
+const invalidateInterviewCaches = async ({
+  roundId,
+  interviewId,
+  userId,
+}: {
+  roundId?: string;
+  interviewId?: string;
+  userId?: string;
+}): Promise<void> => {
+  const keys: string[] = [];
+
+  if (roundId) keys.push(getRoundInterviewsCacheKey(roundId));
+  if (interviewId) keys.push(getInterviewDetailCacheKey(interviewId));
+  if (userId) keys.push(getUserInterviewsCacheKey(userId));
+
+  if (keys.length > 0) {
+    await invalidateManyCacheKeysSafe(keys);
+  }
+};
 class InterviewController {
   // interview
   async createInterview(req: Request, res: Response) {
     try {
       const roundId = await req.params.id;
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       const interviewCandidates: string[] = req.body.candidates;
 
       if (!roundId) throw new Error("roundId is required");
       if (!userId) throw new Error("userId is required");
-      if (req.user?.type === "USER") {
+      if ((req.user as any)?.type === "USER") {
         throw new Error("unauthorized");
       }
 
       let dbUser;
-      if (req.user?.type === "INTERVIEWER") {
+      if ((req.user as any)?.type === "INTERVIEWER") {
         dbUser = await prismaClient.interviewer.findUnique({
           where: { id: userId },
         });
@@ -57,6 +85,8 @@ class InterviewController {
         data: mappedData,
       });
 
+      await invalidateInterviewCaches({ roundId: dbRound.id });
+
       return res
         .status(200)
         .json(apiResponse(200, "interview created", dbInterview));
@@ -68,11 +98,11 @@ class InterviewController {
   async getAllRoundInterview(req: Request, res: Response) {
     try {
       const roundId = req.params.id;
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
 
       if (!roundId) throw new Error("roundId not found");
       if (!userId) throw new Error("userId not found");
-      if (req.user?.type === "USER") throw new Error("unauthorized");
+      if ((req.user as any)?.type === "USER") throw new Error("unauthorized");
 
       const dbRound = await prismaClient.interviewSuiteRound.findUnique({
         where: {
@@ -81,6 +111,15 @@ class InterviewController {
       });
 
       if (!dbRound) throw new Error("db Round not found!");
+
+      const roundInterviewCacheKey = getRoundInterviewsCacheKey(dbRound.id);
+      const cachedInterviews = await getCacheSafe(roundInterviewCacheKey);
+
+      if (cachedInterviews !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "interview Round fetched (Cache)", cachedInterviews));
+      }
 
       const dbInterview = await prismaClient.interview.findMany({
         where: {
@@ -105,6 +144,8 @@ class InterviewController {
         },
       });
 
+      await setCacheSafe(roundInterviewCacheKey, dbInterview);
+
       return res
         .status(200)
         .json(apiResponse(200, "interview Round fetched", dbInterview));
@@ -115,12 +156,12 @@ class InterviewController {
   }
   async getInterviewById(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       const interviewId = req.params.id;
 
       if (!userId) throw new Error("userId not found");
       let dbUser;
-      if (req.user?.type === "USER") {
+      if ((req.user as any)?.type === "USER") {
         dbUser = await prismaClient.user.findUnique({
           where: { id: userId },
         });
@@ -131,11 +172,22 @@ class InterviewController {
       }
       if (!dbUser) throw new Error("user not found");
 
+      const interviewCacheKey = getInterviewDetailCacheKey(interviewId as string);
+      const cachedInterview = await getCacheSafe(interviewCacheKey);
+
+      if (cachedInterview !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "interview fetched (Cache)", cachedInterview));
+      }
+
       const dbInterview = await prismaClient.interview.findUnique({
         where: {
           id: interviewId as string,
         },
       });
+
+      await setCacheSafe(interviewCacheKey, dbInterview);
 
       return res
         .status(200)
@@ -147,16 +199,29 @@ class InterviewController {
   }
   async deleteInterview(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       const interviewId = req.params.id;
 
       if (!userId) throw new Error("userId not found");
-      if (req.user?.type === "USER") throw new Error("unauthorized");
+      if ((req.user as any)?.type === "USER") throw new Error("unauthorized");
+
+      const existingInterview = await prismaClient.interview.findUnique({
+        where: {
+          id: interviewId as string,
+        },
+      });
+
+      if (!existingInterview) throw new Error("interview not found");
 
       const dbInterview = await prismaClient.interview.delete({
         where: {
           id: interviewId as string,
         },
+      });
+
+      await invalidateInterviewCaches({
+        roundId: existingInterview.interviewRoundId ?? undefined,
+        interviewId: interviewId as string,
       });
 
       return res
@@ -169,7 +234,7 @@ class InterviewController {
   }
   async getUserInterview(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
 
       if (!userId) throw new Error("userId not found");
 
@@ -177,6 +242,15 @@ class InterviewController {
         where: { id: userId },
       });
       if (!dbUser) throw new Error("user not found");
+
+      const userInterviewsCacheKey = getUserInterviewsCacheKey(userId);
+      const cachedInterviews = await getCacheSafe(userInterviewsCacheKey);
+
+      if (cachedInterviews !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "interview fetched (Cache)", cachedInterviews));
+      }
 
       const dbInterview = await prismaClient.interview.findMany({
         where: {
@@ -189,6 +263,8 @@ class InterviewController {
           ],
         },
       });
+
+      await setCacheSafe(userInterviewsCacheKey, dbInterview);
 
       return res
         .status(200)
@@ -205,7 +281,7 @@ class InterviewController {
       // key as slug and content - namespace,pod and ingressName
       // alng with this start the meeting
       const interviewId = req.params.id;
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
 
       if (!interviewId) throw new Error("InterviewId not found");
       if (!userId) throw new Error("userId not found");
@@ -225,6 +301,11 @@ class InterviewController {
         },
       });
 
+      await invalidateInterviewCaches({
+        roundId: dbInterview.interviewRoundId ?? undefined,
+        interviewId: dbInterview.id,
+      });
+
       return res
         .status(200)
         .json(apiResponse(200, "interview started", updatedInterview));
@@ -235,11 +316,11 @@ class InterviewController {
   }
   async joinParticipant(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
       const body: { role: "host" | "guest"; channelId: string } = req.body;
 
       let dbUser;
-      if (req.user?.type === "INTERVIEWER") {
+      if ((req.user as any)?.type === "INTERVIEWER") {
         dbUser = await prismaClient.interviewer.findUnique({
           where: { id: userId },
         });
@@ -277,7 +358,7 @@ class InterviewController {
   async endInterview(req: Request, res: Response) {
     try {
       const interviewId = req.params.id;
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
 
       if (!interviewId) throw new Error("InterviewId not found");
       if (!userId) throw new Error("userId not found");
@@ -306,6 +387,11 @@ class InterviewController {
         data: {
           interviewStatus: "COMPLETED",
         },
+      });
+
+      await invalidateInterviewCaches({
+        roundId: dbInterview.interviewRoundId ?? undefined,
+        interviewId: dbInterview.id,
       });
 
       return res
