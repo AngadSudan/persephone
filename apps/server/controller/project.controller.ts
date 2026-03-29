@@ -50,7 +50,7 @@ class ProjectController {
         },
       });
       
-      await graphService.addUserProject(newProject.id,userId,skills);
+      await graphService.addUserProject(newProject.id,userId,skills,title,projectUrl,repositoryUrl);
 
       return res
         .status(201)

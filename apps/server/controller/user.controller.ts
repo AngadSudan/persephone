@@ -11,6 +11,7 @@ import cloudinaryService from "../service/Cloudinary.service";
 import GithubService from "../service/github.service";
 import aiService from "../service/ai.service";
 import { parse } from "yaml";
+import graphService from "../service/graph.service";
 
 class UserController {
   async updateUserInfo(req: Request, res: Response) {
@@ -765,6 +766,27 @@ class UserController {
           isConnected: false,
           graphPoints: [0, 0, 0, 0, 0],
         }),
+      );
+    }
+  }
+
+  async makeFriends(req: Request, res: Response){
+    try {
+      const userId1 = req.user?.id;
+      const { friendId: userId2 } = req.body;
+
+      if(userId1 === userId2) throw new Error("Cannot add yourself as friend");
+      if(!userId1 || userId2) throw new Error("User ID's are missing");
+
+      const result = await graphService.addFriends(userId1, userId2);
+
+      return res.status(200).json(
+        apiResponse(200,"Friends added", result);
+      )
+    } catch (error: any) {
+      console.log(error);
+      return res.status(200).json(
+        apiResponse(200,error.message,error)
       );
     }
   }
