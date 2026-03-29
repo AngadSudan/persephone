@@ -342,7 +342,7 @@ class GraphClient {
   async makeRelationBetweenUserandProject(userID: string, projectId: string) {
     const query = `
     MATCH (u:User {id: $userID})
-    MATCH (p:Project {projectId: $projectId})
+    MATCH (p:Project {id: $projectId})
     MERGE (u)-[:CREATED]->(p)
     MERGE (p)-[:CREATED_BY]->(u)
     RETURN u, p
@@ -368,7 +368,7 @@ class GraphClient {
     skillName: string,
   ) {
     const query = `
-    MATCH (p:Project {projectId: $projectId})
+    MATCH (p:Project {id: $projectId})
     MATCH (s:Skill {name: $skillName})
     MERGE (p)-[:HAS_SKILL]->(s)
     RETURN p, s
