@@ -776,13 +776,13 @@ class UserController {
       const { friendId: userId2 } = req.body;
 
       if(userId1 === userId2) throw new Error("Cannot add yourself as friend");
-      if(!userId1 || userId2) throw new Error("User ID's are missing");
+      if(!userId1 || !userId2) throw new Error("User ID's are missing");
 
       const result = await graphService.addFriends(userId1, userId2);
 
       return res.status(200).json(
-        apiResponse(200,"Friends added", result);
-      )
+        apiResponse(200,"Friends added", result)
+      );
     } catch (error: any) {
       console.log(error);
       return res.status(200).json(

@@ -1,5 +1,20 @@
 import neo4jClient from "../utils/neo4j";
 class GraphService {
+
+    async createUser(Id:string, userName:string, userEmail:string){
+      const userObj = {
+        id: Id,
+        name: userName,
+        email: userEmail
+      }
+      console.log("=============inside function")
+      const user = await neo4jClient.createUserNode(userObj);
+      if(!user) throw new Error("[NEO4j-QUERY-ERROR] - Unable to create User");
+      console.log(user);
+      console.log("=============outer function task over")
+      return userObj;
+    }
+
     async addUserProject(projectId:string,userId:string,skills:string[], projectName:string, projectLiveLink:string, projectGithubLink:string ){
       const user = await neo4jClient.getUserNode(userId);
       if(!user || user.length === 0) throw new Error("[NEO4J-QUERY-ERROR] - user not found in db");

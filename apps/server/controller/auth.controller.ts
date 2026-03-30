@@ -16,6 +16,7 @@ import { generateResetToken, verifyResetToken } from "../utils/resetToken";
 import { generateFreshTokens } from "../utils/jwt";
 import { generatePassword } from "../utils/nodemailer/GeneratePass";
 import cacheClient from "../utils/redis";
+import graphService from "../service/graph.service";
 
 class AuthController {
   async OrganizationRegister(req: Request, res: Response) {
@@ -194,9 +195,14 @@ class AuthController {
           email: data.email,
           username: data.username,
           password: hashedPassword,
+          githubId: data.githubId ?? undefined,
         },
       });
+      console.log(createdUser);
       if (!createdUser) throw new Error("Error Creating User");
+      console.log("================started creation==========")
+      await graphService.createUser(createdUser.id,createdUser.username,createdUser.email);
+      console.log("================ended creation==========")
       return res
         .status(200)
         .json(apiResponse(200, "User Created Successfully", createdUser));

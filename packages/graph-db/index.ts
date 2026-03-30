@@ -4,7 +4,7 @@ interface UserObject {
   id: string;
   name: string;
   email: string;
-  tagline: string;
+  // tagline: string;
 }
 
 interface ProjectObject {
@@ -41,32 +41,35 @@ class GraphClient {
   }
 
   async createUserNode(options: UserObject) {
+    console.log("===========inside inner function ==========")
     const query = `
-      MERGE (n:User {email: $email})
-      SET
-        n.id = $id,
-        n.name = $name,
-        n.tagline = $tagline
-      RETURN n
+    MERGE (n:User {email: $email})
+    SET
+    n.id = $id,
+    n.name = $name,
+    n.tagline = $tagline
+    RETURN n
     `;
-
+    
     const session = this.client?.session();
-
+    
     try {
       const result = await session?.run(query, {
         id: options.id,
         name: options.name,
         email: options.email,
-        tagline: options.tagline,
+        tagline: options.tagline || "default tagline",
       });
       console.log(JSON.stringify(result?.records, null, 2));
       console.log(JSON.stringify(result?.summary, null, 2));
-
+      
       return result?.records;
     } catch (error: any) {
+      console.log(error);
       throw new Error(error.message);
     } finally {
       await session?.close();
+      console.log("===========exiting inner function ==========")
     }
   }
 
@@ -223,7 +226,7 @@ class GraphClient {
   }
   async deleteSkill(skillName: string) {
     const query = `
-      MATCH (s:Skill {name: $skillName})
+      MATCH (s:Skill {name: $name})
       DETACH DELETE s
     `;
 

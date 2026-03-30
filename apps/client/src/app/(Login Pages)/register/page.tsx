@@ -120,7 +120,7 @@ export default function RegisterPage() {
                   {...register("username", {
                     required: "Username is required",
                     pattern: {
-                      value: /^[A-Za-z][A-Za-z0-9\s]*$/,
+                      value: /^[A-Za-z][A-Za-z0-9_\s]*$/,
                       message: "Username cannot start with number",
                     },
                   })}
