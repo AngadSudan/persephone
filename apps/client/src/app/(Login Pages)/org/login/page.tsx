@@ -32,10 +32,17 @@ export default function OrgLoginPage() {
                 headers: { "Content-Type": "application/json" },
             });
 
-            const result = await res.data;
-            console.log(result);
+            const result = res.data;
+            if (result?.statusCode !== 200) {
+                throw new Error(result?.message || "Login failed");
+            }
+
+            const accessToken = result?.data?.token?.accessToken;
+            if (accessToken) {
+                localStorage.setItem("accessToken", accessToken);
+            }
             toast.success("Logged in successfully!");
-            router.push("/profile");
+            router.push("/org-dashboard");
         } catch (err) {
             toast.error("Failed to login. Please try again.");
             console.error(err);

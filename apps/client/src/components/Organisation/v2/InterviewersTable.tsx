@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import axiosInstance from "@/utils/axiosInstance";
 import Spinner from "@/components/General/Spinner";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import { Trash2, Eye, Plus, Search, X, User, AtSign, Mail, ChevronRight } from "lucide-react";
@@ -27,7 +27,7 @@ function Pill({ children }: { children: React.ReactNode }) {
 async function handleCreateInterviewer(data: { name: string; username: string; email: string }) {
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
     try {
-        await axios.post(`${backendUrl}/api/v1/auth/register/interviewer`, data, { withCredentials: true });
+        await axiosInstance.post(`${backendUrl}/api/v1/auth/register/interviewer`, data);
         toast.success("Interviewer created successfully");
     } catch (err) {
         console.error("Failed to create interviewer", err);
@@ -121,9 +121,8 @@ export default function InterviewersTable() {
 
     async function fetchInterviewers() {
         try {
-            const res = await axios.get(
-                `${backendUrl}/api/v1/organizations/interviewers`,
-                { withCredentials: true }
+            const res = await axiosInstance.get(
+                `${backendUrl}/api/v1/organizations/interviewers`
             );
             setInterviewers(res.data.data || []);
         } catch (err) {
@@ -138,9 +137,7 @@ export default function InterviewersTable() {
     async function deleteInterviewer(id: string) {
         setDeletingId(id);
         try {
-            await axios.delete(`${backendUrl}/api/v1/organizations/interviewers/${id}`, {
-                withCredentials: true,
-            });
+            await axiosInstance.delete(`${backendUrl}/api/v1/organizations/interviewers/${id}`);
             setInterviewers((prev) => prev.filter((i) => i.id !== id));
         } catch (err) {
             toast.error("Failed to delete interviewer");
@@ -153,10 +150,9 @@ export default function InterviewersTable() {
 
     async function editInterviewer(data: Interviewer) {
         try {
-            await axios.put(
+            await axiosInstance.put(
                 `${backendUrl}/api/v1/organizations/interviewers/${data.id}`,
-                data,
-                { withCredentials: true }
+                data
             );
             fetchInterviewers();
             setSelectedInterviewer(null);

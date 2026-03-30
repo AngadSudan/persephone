@@ -9,8 +9,13 @@ export const authMiddleware = async (
   next: NextFunction,
 ) => {
   try {
-    const token = req.cookies.accessToken ?? req.headers.authorization?.split(" ")[1] ?? "";
-    console.log(token)
+    const authHeader = req.headers.authorization;
+    const headerToken = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : "";
+    const cookieToken = req.cookies.accessToken ?? "";
+    const token = headerToken || cookieToken;
+
     if (!token) {
       throw new Error("Unauthorised, Re-login");
     }
@@ -30,8 +35,6 @@ export const authMiddleware = async (
         where: { id: decoded.id },
       });
     }
-    console.log(decoded)
-
     if (!user) {
       return res
         .status(401)
