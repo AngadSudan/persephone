@@ -113,7 +113,7 @@ class ProjectController {
         },
       });
       
-      await graphService.addUserProject(newProject.id,userId,skills);
+      await graphService.addUserProject(newProject.id,userId,skills,title,projectUrl,repositoryUrl);
 
       await invalidateProjectCaches(userId);
 

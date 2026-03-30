@@ -11,74 +11,7 @@ import cloudinaryService from "../service/Cloudinary.service";
 import GithubService from "../service/github.service";
 import aiService from "../service/ai.service";
 import { parse } from "yaml";
-import cacheClient from "../utils/redis";
-
-const getFullUserProfileCacheKey = (userId: string) =>
-  `/users/${userId}:profile:full`;
-const getPublicUserProfileCacheKey = (username: string) =>
-  `/users/${username}:profile:public`;
-const getUserGraphCacheKey = (userId: string) => `/users/${userId}:graph`;
-
-const parseCachedValue = <T>(cachedValue: unknown): T | null => {
-  if (cachedValue === null || cachedValue === undefined) {
-    return null;
-  }
-
-  if (typeof cachedValue === "string") {
-    try {
-      return JSON.parse(cachedValue) as T;
-    } catch {
-      return null;
-    }
-  }
-
-  return cachedValue as T;
-};
-
-const getCacheSafe = async <T>(key: string): Promise<T | null> => {
-  try {
-    const cachedValue = await cacheClient.getCache(key);
-    return parseCachedValue<T>(cachedValue);
-  } catch (error: any) {
-    console.error(`Cache read failed for key ${key}:`, error?.message || error);
-    return null;
-  }
-};
-
-const setCacheSafe = async (key: string, value: unknown): Promise<void> => {
-  try {
-    await cacheClient.setCache(key, value);
-  } catch (error: any) {
-    console.error(`Cache write failed for key ${key}:`, error?.message || error);
-  }
-};
-
-const invalidateCacheSafe = async (key: string): Promise<void> => {
-  try {
-    await cacheClient.invalidateCache(key);
-  } catch (error: any) {
-    console.error(
-      `Cache invalidation failed for key ${key}:`,
-      error?.message || error,
-    );
-  }
-};
-
-const invalidateUserCaches = async (
-  userId: string,
-  username?: string | null,
-): Promise<void> => {
-  const keysToInvalidate = [
-    getFullUserProfileCacheKey(userId),
-    getUserGraphCacheKey(userId),
-  ];
-
-  if (username) {
-    keysToInvalidate.push(getPublicUserProfileCacheKey(username));
-  }
-
-  await Promise.all(keysToInvalidate.map((key) => invalidateCacheSafe(key)));
-};
+import graphService from "../service/graph.service";
 
 class UserController {
   async updateUserInfo(req: Request, res: Response) {
@@ -913,6 +846,27 @@ class UserController {
           isConnected: false,
           graphPoints: [0, 0, 0, 0, 0],
         }),
+      );
+    }
+  }
+
+  async makeFriends(req: Request, res: Response){
+    try {
+      const userId1 = req.user?.id;
+      const { friendId: userId2 } = req.body;
+
+      if(userId1 === userId2) throw new Error("Cannot add yourself as friend");
+      if(!userId1 || !userId2) throw new Error("User ID's are missing");
+
+      const result = await graphService.addFriends(userId1, userId2);
+
+      return res.status(200).json(
+        apiResponse(200,"Friends added", result)
+      );
+    } catch (error: any) {
+      console.log(error);
+      return res.status(200).json(
+        apiResponse(200,error.message,error)
       );
     }
   }

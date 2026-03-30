@@ -79,4 +79,10 @@ userRouter.put(
   UserController.updateUserPlatformLinks,
 );
 
+userRouter.post(
+  "/friends",
+  authMiddleware,
+  UserController.makeFriends
+);
+
 export default userRouter;

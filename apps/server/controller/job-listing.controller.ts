@@ -43,9 +43,9 @@ class JobListingController {
           organizationId: orgId,
         },
       });
-      await graphService.addJobListing(); // params to be passed.
-      await invalidateCacheSafe(getOrgJobListingsCacheKey(orgId));
 
+      await cacheClient.invalidateCache(`/jobListing/${orgId}`);
+      await graphService.addJobListing(orgId,data.skills,jobListing.id,orgId, data.name, data.stipend); // params to be passed.
       return res
         .status(201)
         .json(
