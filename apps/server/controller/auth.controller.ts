@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { randomUUID } from "crypto";
 import type {
   CreateInterviewerBody,
   CreateOrganisationBody,
@@ -195,14 +196,15 @@ class AuthController {
           email: data.email,
           username: data.username,
           password: hashedPassword,
-          githubId: data.githubId ?? undefined,
+          githubId: data.githubId?.trim() ? data.githubId.trim() : null,
         },
       });
-      console.log(createdUser);
       if (!createdUser) throw new Error("Error Creating User");
-      console.log("================started creation==========")
-      await graphService.createUser(createdUser.id,createdUser.username,createdUser.email);
-      console.log("================ended creation==========")
+      await graphService.createUser(
+        createdUser.id,
+        createdUser.username,
+        createdUser.email,
+      );
       return res
         .status(200)
         .json(apiResponse(200, "User Created Successfully", createdUser));
@@ -392,6 +394,18 @@ class AuthController {
 
     if (!dbUser) throw new Error("User not Found!");
 
+    const existingGithubUser = await prismaClient.user.findFirst({
+      where: {
+        githubId,
+        NOT: { id: dbUser.id },
+      },
+      select: { id: true },
+    });
+
+    if (existingGithubUser) {
+      throw new Error("This GitHub account is already linked to another user");
+    }
+
     const updatedUser = await prismaClient.user.update({
       where: { id: dbUser.id },
       data: {
@@ -421,6 +435,15 @@ class AuthController {
     name: string,
     avatar: string,
   ) {
+    const existingGithubUser = await prismaClient.user.findFirst({
+      where: { githubId },
+      select: { id: true },
+    });
+
+    if (existingGithubUser) {
+      throw new Error("User already exists with this GitHub account");
+    }
+
     const createdUser = await prismaClient.user.create({
       data: {
         username,
