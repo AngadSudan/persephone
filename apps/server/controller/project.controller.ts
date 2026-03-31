@@ -4,6 +4,69 @@ import prismaClient from "../utils/prisma";
 import type { projectPayload } from "../utils/type";
 import cloudinaryService from "../service/Cloudinary.service";
 import graphService from "../service/graph.service";
+import cacheClient from "../utils/redis";
+
+const getProjectsListCacheKey = (userId: string) => `/projects/${userId}:projects`;
+const getProjectDetailCacheKey = (userId: string, projectId: string) =>
+  `/projects/${userId}:project:${projectId}`;
+
+const parseCachedValue = <T>(cachedValue: unknown): T | null => {
+  if (cachedValue === null || cachedValue === undefined) {
+    return null;
+  }
+
+  if (typeof cachedValue === "string") {
+    try {
+      return JSON.parse(cachedValue) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  return cachedValue as T;
+};
+
+const getCacheSafe = async <T>(key: string): Promise<T | null> => {
+  try {
+    const cachedValue = await cacheClient.getCache(key);
+    return parseCachedValue<T>(cachedValue);
+  } catch (error: any) {
+    console.error(`Cache read failed for key ${key}:`, error?.message || error);
+    return null;
+  }
+};
+
+const setCacheSafe = async (key: string, value: unknown): Promise<void> => {
+  try {
+    await cacheClient.setCache(key, value);
+  } catch (error: any) {
+    console.error(`Cache write failed for key ${key}:`, error?.message || error);
+  }
+};
+
+const invalidateCacheSafe = async (key: string): Promise<void> => {
+  try {
+    await cacheClient.invalidateCache(key);
+  } catch (error: any) {
+    console.error(
+      `Cache invalidation failed for key ${key}:`,
+      error?.message || error,
+    );
+  }
+};
+
+const invalidateProjectCaches = async (
+  userId: string,
+  projectId?: string,
+): Promise<void> => {
+  const keysToInvalidate = [getProjectsListCacheKey(userId)];
+
+  if (projectId) {
+    keysToInvalidate.push(getProjectDetailCacheKey(userId, projectId));
+  }
+
+  await Promise.all(keysToInvalidate.map((key) => invalidateCacheSafe(key)));
+};
 
 class ProjectController {
   async createProject(req: Request<{}, {}, projectPayload>, res: Response) {
@@ -51,6 +114,8 @@ class ProjectController {
       });
       
       await graphService.addUserProject(newProject.id,userId,skills,title,projectUrl,repositoryUrl);
+
+      await invalidateProjectCaches(userId);
 
       return res
         .status(201)
@@ -111,6 +176,8 @@ class ProjectController {
         },
       });
 
+      await invalidateProjectCaches(userId, id);
+
       return res
         .status(200)
         .json(apiResponse(200, "Project Updated!!", updatedProject));
@@ -156,6 +223,8 @@ class ProjectController {
       });
 
       if(!updatedCover) throw new Error("Unable to update Cover Image");
+
+      await invalidateProjectCaches(userId, projectId);
 
       return res.status(200).json(
         apiResponse(200, "Updated Cover Image", updatedCover),
@@ -230,6 +299,8 @@ class ProjectController {
       data: uploadedMedias,
     });
 
+    await invalidateProjectCaches(userId, projectId);
+
     return res.status(200).json(
       apiResponse(200, "Project media updated successfully", createdMedias)
     );
@@ -285,6 +356,8 @@ class ProjectController {
         where: { id: mediaId },
       });
 
+      await invalidateProjectCaches(userId, projectId);
+
       return res
         .status(200)
         .json(apiResponse(200, "Project media deleted successfully", null));
@@ -322,6 +395,8 @@ class ProjectController {
         where: { id },
       });
 
+      await invalidateProjectCaches(userId, id);
+
       return res
         .status(200)
         .json(apiResponse(200, "Project Deleted Successfully", null));
@@ -340,8 +415,18 @@ class ProjectController {
         return res.status(401).json(apiResponse(401, "Unauthorized", null));
       }
 
-      const project = await prismaClient.projects.findUnique({
-        where: { id },
+      const projectCacheKey = getProjectDetailCacheKey(userId, id);
+      const cacheProject = await getCacheSafe(projectCacheKey);
+ 
+      if (cacheProject !== null) {
+        console.log('Project Fetched from cache');
+        return res
+        .status(200)
+        .json(apiResponse(200,"Project Fetched (Cache) !",cacheProject));
+      }
+
+      const project = await prismaClient.projects.findFirst({
+        where: { id, ownerId: userId },
         include: { projectMedias: true },
       });
 
@@ -350,6 +435,9 @@ class ProjectController {
           .status(404)
           .json(apiResponse(404, "Project not found", null));
       }
+
+      await setCacheSafe(projectCacheKey, project);
+      console.log('Project Set in cache');
 
       return res.status(200).json(apiResponse(200, "Success", project));
     } catch (error: any) {
@@ -366,11 +454,22 @@ class ProjectController {
         return res.status(401).json(apiResponse(401, "Unauthorized", null));
       }
 
+      const projectsListCacheKey = getProjectsListCacheKey(userId);
+      const cacheProjects = await getCacheSafe(projectsListCacheKey);
+ 
+      if (cacheProjects !== null) {
+        return res
+        .status(200)
+        .json(apiResponse(200,"Projects Fetched (Cache) !",cacheProjects));
+      }
+
       const projects = await prismaClient.projects.findMany({
         where: { ownerId: userId },
         orderBy: { createdAt: "desc" },
         include: { projectMedias: true },
       });
+
+      await setCacheSafe(projectsListCacheKey, projects)
 
       return res.status(200).json(apiResponse(200, "Success", projects));
     } catch (error: any) {

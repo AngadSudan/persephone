@@ -2,15 +2,38 @@ import type { Request, Response } from "express";
 import apiResponse from "../utils/apiResponse";
 import prismaClient from "../utils/prisma";
 import * as InterviewTypes from "../utils/type";
-import cacheClient from "../utils/redis";
 import externalPlatformService from "../service/external-platform.service";
+import {
+  getCacheSafe,
+  invalidateCacheSafe,
+  invalidateManyCacheKeysSafe,
+  setCacheSafe,
+} from "../utils/cache";
 
 const MAX_PAGE_SIZE = 100;
+
+const getInterviewSuiteByIdCacheKey = (suiteId: string) =>
+  `/interview-suite/${suiteId}`;
+const getCompanyInterviewSuitesCacheKey = (orgId: string) =>
+  `/interview-suite/company/${orgId}`;
+const getInterviewRoundsBySuiteCacheKey = (suiteId: string) =>
+  `/interview/${suiteId}/rounds`;
+const getInterviewRoundByIdCacheKey = (suiteId: string, roundId: string) =>
+  `/interview/${suiteId}/rounds/${roundId}`;
+const getJobApplicationsPageZeroCacheKey = (jobListingId: string) =>
+  `/job-listing/${jobListingId}/application?pageNumber=0`;
+const getJobApplicationDetailCacheKey = (applicationId: string) =>
+  `/job-applications/${applicationId}:detail`;
+const getSelectedCandidatesCacheKey = (jobListingId: string) =>
+  `/joblisting/${jobListingId}/selected`;
+const getRoundCandidatesPageZeroCacheKey = (roundId: string) =>
+  `/interview-round/${roundId}/candidates?page=0`;
+
 class InterviewSuiteController {
   async createInterviewSuite(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const jobListingId = req.params.id;
+      const jobListingId = String(req.params.id);
       const data: InterviewTypes.SuiteCreation = req.body;
 
       if (!userId) throw new Error("userId is required");
@@ -49,9 +72,7 @@ class InterviewSuiteController {
 
       if (!createdSuite) throw new Error("error creating interview suite");
 
-      await cacheClient.invalidateCache(
-        `/interview-suite/company/${dbUser.orgId}`,
-      );
+      await invalidateCacheSafe(getCompanyInterviewSuitesCacheKey(dbUser.orgId));
 
       return res
         .status(200)
@@ -64,7 +85,7 @@ class InterviewSuiteController {
   async updateInterviewSuite(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const suiteId = req.params.id;
+      const suiteId = String(req.params.id);
       const data: Partial<InterviewTypes.SuiteCreation> = req.body;
 
       if (!userId) throw new Error("userId is required");
@@ -114,10 +135,10 @@ class InterviewSuiteController {
       });
 
       if (!updatedSuite) throw new Error("error updating interview suite");
-      await cacheClient.invalidateCache(`/interview-suit/${suiteId}`);
-      await cacheClient.invalidateCache(
-        `/interview-suite/company/${dbUser.orgId}`,
-      );
+      await invalidateManyCacheKeysSafe([
+        getInterviewSuiteByIdCacheKey(suiteId),
+        getCompanyInterviewSuitesCacheKey(dbUser.orgId),
+      ]);
       return res
         .status(200)
         .json(apiResponse(200, "interview suite updated", updatedSuite));
@@ -129,7 +150,7 @@ class InterviewSuiteController {
   async updateSuiteState(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const suiteId = req.params.id;
+      const suiteId = String(req.params.id);
 
       if (!userId) throw new Error("userId is required");
       if (!suiteId) throw new Error("suiteId is  missing");
@@ -179,10 +200,10 @@ class InterviewSuiteController {
       });
 
       if (!updatedSuite) throw new Error("error updating interview suite");
-      await cacheClient.invalidateCache(`/interview-suit/${suiteId}`);
-      await cacheClient.invalidateCache(
-        `/interview-suite/company/${dbUser.orgId}`,
-      );
+      await invalidateManyCacheKeysSafe([
+        getInterviewSuiteByIdCacheKey(suiteId),
+        getCompanyInterviewSuitesCacheKey(dbUser.orgId),
+      ]);
       return res
         .status(200)
         .json(apiResponse(200, "interview suite updated", updatedSuite));
@@ -194,7 +215,7 @@ class InterviewSuiteController {
   async deleteInterviewSuite(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const suiteId = req.params.id;
+      const suiteId = String(req.params.id);
 
       if (!userId) throw new Error("userId is required");
       if (!suiteId) throw new Error("suiteId is  missing");
@@ -218,10 +239,11 @@ class InterviewSuiteController {
       });
 
       if (!deletedSuite) throw new Error("error deleting interview suite");
-      await cacheClient.invalidateCache(`/interview-suit/${suiteId}`);
-      await cacheClient.invalidateCache(
-        `/interview-suite/company/${dbUser.orgId}`,
-      );
+      await invalidateManyCacheKeysSafe([
+        getInterviewSuiteByIdCacheKey(suiteId),
+        getCompanyInterviewSuitesCacheKey(dbUser.orgId),
+        getInterviewRoundsBySuiteCacheKey(dbInterviewSuite.id),
+      ]);
       return res
         .status(200)
         .json(apiResponse(200, "interview suite deleted", deletedSuite));
@@ -233,25 +255,18 @@ class InterviewSuiteController {
   async getInterviewSuiteById(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const suiteId = req.params.id;
+      const suiteId = String(req.params.id);
 
       if (!userId) throw new Error("userId is required");
       if (!suiteId) throw new Error("suiteId is  missing");
       if (req.user?.type === "USER") throw new Error("unauthorized");
 
-      const cachedResponse = await cacheClient.getCache(
-        `/interview-suit/${suiteId}`,
-      );
-      if (cachedResponse) {
+      const cacheKey = getInterviewSuiteByIdCacheKey(suiteId);
+      const cachedResponse = await getCacheSafe(cacheKey);
+      if (cachedResponse !== null) {
         return res
           .status(200)
-          .json(
-            apiResponse(
-              200,
-              "interview suite fetched",
-              JSON.parse(cachedResponse),
-            ),
-          );
+          .json(apiResponse(200, "interview suite fetched", cachedResponse));
       }
 
       const dbUser = await prismaClient.interviewer.findUnique({
@@ -285,10 +300,7 @@ class InterviewSuiteController {
 
       if (!dbInterviewSuite) throw new Error("No interviewSuite found");
 
-      await cacheClient.setCache(
-        `/interview-suit/${suiteId}`,
-        JSON.stringify(dbInterviewSuite),
-      );
+      await setCacheSafe(cacheKey, dbInterviewSuite);
 
       return res
         .status(200)
@@ -312,19 +324,12 @@ class InterviewSuiteController {
 
       if (!dbUser) throw new Error("user not found");
 
-      const cachedInterviewSuite = await cacheClient.getCache(
-        `/interview-suite/company/${dbUser.orgId}`,
-      );
-      if (cachedInterviewSuite) {
+      const cacheKey = getCompanyInterviewSuitesCacheKey(dbUser.orgId);
+      const cachedInterviewSuite = await getCacheSafe(cacheKey);
+      if (cachedInterviewSuite !== null) {
         return res
           .status(200)
-          .json(
-            apiResponse(
-              200,
-              "interview suite fetched",
-              JSON.parse(cachedInterviewSuite),
-            ),
-          );
+          .json(apiResponse(200, "interview suite fetched", cachedInterviewSuite));
       }
       // TODO: add a check for interviewer vs organization
       const dbInterviewSuite = await prismaClient.interviewSuite.findMany({
@@ -333,10 +338,7 @@ class InterviewSuiteController {
         },
       });
 
-      await cacheClient.setCache(
-        `/interview-suite/company/${dbUser.orgId}`,
-        JSON.stringify(dbInterviewSuite || []),
-      );
+      await setCacheSafe(cacheKey, dbInterviewSuite || []);
 
       return res
         .status(200)
@@ -350,7 +352,7 @@ class InterviewSuiteController {
   async createInterviewRound(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const suiteId = req.params.id;
+      const suiteId = String(req.params.id);
       const data: InterviewTypes.SuiteRound = req.body;
 
       if (!userId) throw new Error("no userID found");
@@ -381,7 +383,7 @@ class InterviewSuiteController {
 
       if (!createdRound) throw new Error("interview round not created");
 
-      await cacheClient.invalidateCache(`/interview/${dbSuite.id}/rounds`);
+      await invalidateCacheSafe(getInterviewRoundsBySuiteCacheKey(dbSuite.id));
 
       return res
         .status(200)
@@ -394,7 +396,7 @@ class InterviewSuiteController {
   async updateInterviewRound(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const roundId = req.params.id;
+      const roundId = String(req.params.id);
       const data: Partial<InterviewTypes.SuiteRound> = req.body;
 
       if (!userId) throw new Error("no userID found");
@@ -427,12 +429,10 @@ class InterviewSuiteController {
 
       if (!updatedRound) throw new Error("interview round not updated");
 
-      await cacheClient.invalidateCache(
-        `/interview/${updatedRound.suiteId}/rounds`,
-      );
-      await cacheClient.invalidateCache(
-        `/interview/${updatedRound.suiteId}/rounds/${dbRound.id}`,
-      );
+      await invalidateManyCacheKeysSafe([
+        getInterviewRoundsBySuiteCacheKey(updatedRound.suiteId),
+        getInterviewRoundByIdCacheKey(updatedRound.suiteId, dbRound.id),
+      ]);
 
       return res
         .status(200)
@@ -445,7 +445,7 @@ class InterviewSuiteController {
   async deleteInterviewRound(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const roundId = req.params.id;
+      const roundId = String(req.params.id);
 
       if (!userId) throw new Error("no userID found");
       if (!roundId) throw new Error("no roundId found");
@@ -471,12 +471,11 @@ class InterviewSuiteController {
 
       if (!deletedRound) throw new Error("interview round not deleted");
 
-      await cacheClient.invalidateCache(
-        `/interview/${deletedRound.suiteId}/rounds`,
-      );
-      await cacheClient.invalidateCache(
-        `/interview/${deletedRound.suiteId}/rounds/${dbRound.id}`,
-      );
+      await invalidateManyCacheKeysSafe([
+        getInterviewRoundsBySuiteCacheKey(deletedRound.suiteId),
+        getInterviewRoundByIdCacheKey(deletedRound.suiteId, dbRound.id),
+        getRoundCandidatesPageZeroCacheKey(dbRound.id),
+      ]);
 
       return res
         .status(200)
@@ -489,7 +488,7 @@ class InterviewSuiteController {
   async getAllInterviewRoundBySuite(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const suiteId = req.params.id;
+      const suiteId = String(req.params.id);
 
       if (!userId) throw new Error("no userID found");
       if (!suiteId) throw new Error("no suiteId found");
@@ -507,19 +506,12 @@ class InterviewSuiteController {
       });
       if (!dbSuite) throw new Error("no such dbSuite found");
 
-      const cachedRounds = await cacheClient.getCache(
-        `/interview/${dbSuite.id}/rounds`,
-      );
-      if (cachedRounds) {
+      const cacheKey = getInterviewRoundsBySuiteCacheKey(dbSuite.id);
+      const cachedRounds = await getCacheSafe(cacheKey);
+      if (cachedRounds !== null) {
         return res
           .status(200)
-          .json(
-            apiResponse(
-              200,
-              "rounds fetched successfully",
-              JSON.parse(cachedRounds),
-            ),
-          );
+          .json(apiResponse(200, "rounds fetched successfully", cachedRounds));
       }
 
       const dbRounds = await prismaClient.interviewSuiteRound.findMany({
@@ -528,10 +520,7 @@ class InterviewSuiteController {
         },
       });
 
-      await cacheClient.setCache(
-        `/interview/${dbSuite.id}/rounds`,
-        JSON.stringify(dbRounds || []),
-      );
+      await setCacheSafe(cacheKey, dbRounds || []);
 
       return res
         .status(200)
@@ -544,7 +533,7 @@ class InterviewSuiteController {
   async getInterviewRoundById(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const roundId = req.params.id;
+      const roundId = String(req.params.id);
 
       if (!userId) throw new Error("no userID found");
       if (!roundId) throw new Error("no roundId found");
@@ -562,14 +551,16 @@ class InterviewSuiteController {
       });
       if (!dbRound) throw new Error("no such dbSuite found");
 
-      // const cachedRound = await cacheClient.getCache(
-      //   `/interview/${dbRound.suiteId}/rounds/${dbRound.id}`,
-      // );
-      // if (cachedRound) {
-      //   return res
-      //     .status(200)
-      //     .json(apiResponse(200, "interview round fetched", cachedRound));
-      // }
+      const roundCacheKey = getInterviewRoundByIdCacheKey(
+        dbRound.suiteId,
+        dbRound.id,
+      );
+      const cachedRound = await getCacheSafe(roundCacheKey);
+      if (cachedRound !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "interview round fetched", cachedRound));
+      }
 
       const interviewRound = await prismaClient.interviewSuiteRound.findUnique({
         where: { id: dbRound.id },
@@ -580,10 +571,7 @@ class InterviewSuiteController {
 
       if (!interviewRound) throw new Error("no such interview Round found");
 
-      await cacheClient.setCache(
-        `/interview/${dbRound.suiteId}/rounds/${dbRound.id}`,
-        JSON.stringify(interviewRound),
-      );
+      await setCacheSafe(roundCacheKey, interviewRound);
 
       return res
         .status(200)
@@ -598,7 +586,7 @@ class InterviewSuiteController {
   async getAllApplication(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const suiteId = req.params.id;
+      const suiteId = String(req.params.id);
       const pageNumber = Number(req.query.page) || 0;
       console.log(pageNumber);
       if (!userId) throw new Error("userId not found");
@@ -628,16 +616,20 @@ class InterviewSuiteController {
       });
       if (!dbJobListing) throw new Error("job listing not found");
 
-      // const cachedData = await cacheClient.getCache(
-      //   `/job-listing/${dbJobListing?.id}/application?pageNumber=${pageNumber}`,
-      // );
-      // if (cachedData) {
-      //   return res
-      //     .status(200)
-      //     .json(
-      //       apiResponse(200, "applications fetched", JSON.parse(cachedData)),
-      //     );
-      // }
+      const shouldUseCache = pageNumber === 0;
+      const applicationsCacheKey = getJobApplicationsPageZeroCacheKey(
+        dbJobListing.id,
+      );
+
+      if (shouldUseCache) {
+        const cachedData = await getCacheSafe(applicationsCacheKey);
+        if (cachedData !== null) {
+          return res
+            .status(200)
+            .json(apiResponse(200, "applications fetched", cachedData));
+        }
+      }
+
       const applicationCount = await prismaClient.jobApplication.count({
         where: { jobListingId: dbJobListing.id },
       });
@@ -664,14 +656,15 @@ class InterviewSuiteController {
         take: MAX_PAGE_SIZE,
       });
 
-      await cacheClient.setCache(
-        `/job-listing/${dbJobListing?.id}/application?pageNumber=${pageNumber}`,
-        JSON.stringify(data),
-      );
+      const responsePayload = { data, totalPages };
+
+      if (shouldUseCache) {
+        await setCacheSafe(applicationsCacheKey, responsePayload);
+      }
 
       return res
         .status(200)
-        .json(apiResponse(200, "applications fetched", { data, totalPages }));
+        .json(apiResponse(200, "applications fetched", responsePayload));
     } catch (error: any) {
       console.log(error);
       return res.status(200).json(apiResponse(500, error.message, null));
@@ -679,7 +672,7 @@ class InterviewSuiteController {
   }
   async getApplicationById(req: Request, res: Response) {
     try {
-      const applicationId = req.params.id;
+      const applicationId = String(req.params.id);
       const userId = req.user?.id;
 
       if (!applicationId) throw new Error("applicationId not found");
@@ -704,6 +697,15 @@ class InterviewSuiteController {
       });
       if (!dbApplication) throw new Error("Job application not found");
 
+      const applicationCacheKey = getJobApplicationDetailCacheKey(applicationId);
+      const cachedApplication = await getCacheSafe(applicationCacheKey);
+
+      if (cachedApplication !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "application Fetched (Cache)", cachedApplication));
+      }
+
       const dbCandidate = await prismaClient.user.findUnique({
         where: { id: dbApplication.candidateId },
         include: {
@@ -713,12 +715,16 @@ class InterviewSuiteController {
 
       if (!dbCandidate) throw new Error("failed to fetch Information");
 
-      return res.status(200).json(
-        apiResponse(200, "application Fetched", {
-          userInfo: dbCandidate,
-          application: dbApplication,
-        }),
-      );
+      const responseData = {
+        userInfo: dbCandidate,
+        application: dbApplication,
+      };
+
+      await setCacheSafe(applicationCacheKey, responseData);
+
+      return res
+        .status(200)
+        .json(apiResponse(200, "application Fetched", responseData));
     } catch (error: any) {
       console.log(error);
       return res.status(200).json(apiResponse(500, error.message, null));
@@ -772,7 +778,7 @@ class InterviewSuiteController {
   async selectApplicaton(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const jobApplicationId = req.params.id;
+      const jobApplicationId = String(req.params.id);
 
       if (!userId) throw new Error("userId not found");
       if (!jobApplicationId) throw new Error("jobApplicationId not found");
@@ -844,6 +850,13 @@ class InterviewSuiteController {
       if (!updatedStatus)
         throw new Error("could not update application status");
 
+      await invalidateManyCacheKeysSafe([
+        getSelectedCandidatesCacheKey(dbJobApplication.jobListingId),
+        getJobApplicationsPageZeroCacheKey(dbJobApplication.jobListingId),
+        getJobApplicationDetailCacheKey(dbJobApplication.id),
+        getRoundCandidatesPageZeroCacheKey(dbRound[0]?.id!),
+      ]);
+
       return res
         .status(200)
         .json(apiResponse(200, "selected candidate", updatedStatus));
@@ -855,7 +868,7 @@ class InterviewSuiteController {
   async rejectApplication(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const jobApplicationId = req.params.id;
+      const jobApplicationId = String(req.params.id);
 
       if (!userId) throw new Error("userId not found");
       if (!jobApplicationId) throw new Error("jobApplicationId not found");
@@ -906,6 +919,12 @@ class InterviewSuiteController {
       if (!updatedStatus)
         throw new Error("could not update application status");
 
+      await invalidateManyCacheKeysSafe([
+        getSelectedCandidatesCacheKey(dbJobApplication.jobListingId),
+        getJobApplicationsPageZeroCacheKey(dbJobApplication.jobListingId),
+        getJobApplicationDetailCacheKey(dbJobApplication.id),
+      ]);
+
       return res
         .status(200)
         .json(apiResponse(200, "rejected candidate", updatedStatus));
@@ -917,7 +936,7 @@ class InterviewSuiteController {
   async getAllSelectedCandidates(req: Request, res: Response) {
     try {
       const userId = req.user?.id;
-      const jobListingId = req.params.id;
+      const jobListingId = String(req.params.id);
 
       if (!userId) throw new Error("userId not found");
       if (!jobListingId) throw new Error("jobListingId not found");
@@ -935,19 +954,12 @@ class InterviewSuiteController {
       }
 
       if (!dbUser) throw new Error("db user not found");
-      const cachedData = await cacheClient.getCache(
-        `/joblisting/${jobListingId}/selected`,
-      );
-      if (cachedData) {
+      const selectedCandidatesCacheKey = getSelectedCandidatesCacheKey(jobListingId);
+      const cachedData = await getCacheSafe(selectedCandidatesCacheKey);
+      if (cachedData !== null) {
         return res
           .status(200)
-          .json(
-            apiResponse(
-              200,
-              "fetched Selected Candidates",
-              JSON.parse(cachedData),
-            ),
-          );
+          .json(apiResponse(200, "fetched Selected Candidates", cachedData));
       }
       const dbJobApplications = await prismaClient.jobListing.findMany({
         where: { id: jobListingId as string },
@@ -959,10 +971,7 @@ class InterviewSuiteController {
           },
         },
       });
-      await cacheClient.setCache(
-        `/joblisting/${jobListingId}/selected`,
-        JSON.stringify(dbJobApplications),
-      );
+      await setCacheSafe(selectedCandidatesCacheKey, dbJobApplications);
       return res
         .status(200)
         .json(
@@ -977,7 +986,7 @@ class InterviewSuiteController {
   // interview-candidate
   async getAllRoundCanddate(req: Request, res: Response) {
     try {
-      const roundId = req.params.id;
+      const roundId = String(req.params.id);
       const userId = req.user?.id;
       const pageNumber = Number(req.query.page) || 0;
 
@@ -990,20 +999,16 @@ class InterviewSuiteController {
       });
       if (!dbRound) throw new Error("dbround not found");
 
-      // const cachedData = await cacheClient.getCache(
-      //   `/interview-round/${dbRound.id}/candidates`,
-      // );
-      // if (cachedData) {
-      //   return res
-      //     .status(200)
-      //     .json(
-      //       apiResponse(
-      //         200,
-      //         "fetched round candidates",
-      //         JSON.parse(cachedData),
-      //       ),
-      //     );
-      // }
+      const shouldUseCache = pageNumber === 0;
+      const candidatesCacheKey = getRoundCandidatesPageZeroCacheKey(dbRound.id);
+      if (shouldUseCache) {
+        const cachedData = await getCacheSafe(candidatesCacheKey);
+        if (cachedData !== null) {
+          return res
+            .status(200)
+            .json(apiResponse(200, "fetched round candidates", cachedData));
+        }
+      }
       console.log(dbRound.id);
       const data = await prismaClient.roundCandidate.findMany({
         where: { roundId: dbRound.id },
@@ -1025,10 +1030,9 @@ class InterviewSuiteController {
         skip: MAX_PAGE_SIZE * pageNumber,
       });
 
-      await cacheClient.setCache(
-        `/interview-round/${dbRound.id}/candidates`,
-        JSON.stringify(data),
-      );
+      if (shouldUseCache) {
+        await setCacheSafe(candidatesCacheKey, data);
+      }
 
       return res
         .status(200)
@@ -1040,7 +1044,7 @@ class InterviewSuiteController {
   }
   async handleRoundStatusChange(req: Request, res: Response) {
     try {
-      const currentRoundId = req.params.id;
+      const currentRoundId = String(req.params.id);
       const roundCandidateId = req.params.candidateId;
       const updatedStatus = req.body.status;
       const userId = req.user?.id;
@@ -1091,6 +1095,10 @@ class InterviewSuiteController {
             },
           });
 
+          await invalidateCacheSafe(
+            getRoundCandidatesPageZeroCacheKey(dbCurrentRound.id),
+          );
+
           console.log(updatedData);
 
           return res
@@ -1111,6 +1119,13 @@ class InterviewSuiteController {
             roundStatus: "SELECTED_FOR_NEXT",
           },
         });
+
+        await invalidateCacheSafe(
+          getRoundCandidatesPageZeroCacheKey(dbCurrentRound.id),
+        );
+        if (nextRound) {
+          await invalidateCacheSafe(getRoundCandidatesPageZeroCacheKey(nextRound));
+        }
         return res
           .status(200)
           .json(apiResponse(200, "candidates selected", data));
@@ -1122,6 +1137,10 @@ class InterviewSuiteController {
           },
         });
 
+        await invalidateCacheSafe(
+          getRoundCandidatesPageZeroCacheKey(dbCurrentRound.id),
+        );
+
         return res
           .status(200)
           .json(apiResponse(200, "candidates rejected", updatedData));
@@ -1132,6 +1151,10 @@ class InterviewSuiteController {
             roundStatus: "PENDING",
           },
         });
+
+        await invalidateCacheSafe(
+          getRoundCandidatesPageZeroCacheKey(dbCurrentRound.id),
+        );
 
         return res
           .status(200)

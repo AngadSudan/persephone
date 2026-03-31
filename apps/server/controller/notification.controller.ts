@@ -1,7 +1,13 @@
 import type { Request, Response } from "express";
 import prismaClient from "../utils/prisma";
 import apiResponse from "../utils/apiResponse";
-import cacheClient from "../utils/redis";
+import {
+  getCacheSafe,
+  invalidateCacheSafe,
+  setCacheSafe,
+} from "../utils/cache";
+
+const getNotificationCacheKey = (userId: string) => `/notification/${userId}`;
 
 class NotificationController {
   async createInternalNotification(data: {
@@ -29,9 +35,7 @@ class NotificationController {
         message,
       });
 
-      await cacheClient.invalidateCache(
-        `/notification/${to}`,
-      );
+      await invalidateCacheSafe(getNotificationCacheKey(to));
 
       return res
         .status(201)
@@ -45,7 +49,7 @@ class NotificationController {
   }
   async getAllNotifications(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
 
       if (!userId) {
         return res
@@ -53,11 +57,11 @@ class NotificationController {
           .json(apiResponse(400, "User ID is Required", null));
       }
 
-      const cacheNotification = await cacheClient.getCache(
-        `/notification/${userId}`
+      const cacheNotification = await getCacheSafe(
+        getNotificationCacheKey(userId)
       );
 
-      if(cacheNotification){
+      if(cacheNotification !== null){
         return res
         .status(200)
         .json(apiResponse(200,"Notifications Fetched (Cache) !",cacheNotification));
@@ -73,10 +77,7 @@ class NotificationController {
         },
       });
 
-      await cacheClient.setCache(
-        `/notification/${userId}`,
-        notifications
-      );
+      await setCacheSafe(getNotificationCacheKey(userId), notifications);
 
       return res
         .status(200)
@@ -93,7 +94,7 @@ class NotificationController {
   async markNotificationAsRead(req: Request, res: Response) {
     try {
       const { notificationId } = req.params;
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
 
       if (!notificationId) {
         return res
@@ -119,9 +120,7 @@ class NotificationController {
         },
       });
 
-      await cacheClient.invalidateCache(
-        `/notification/${userId}`
-      );
+      await invalidateCacheSafe(getNotificationCacheKey(userId));
 
       return res
         .status(200)
@@ -135,7 +134,7 @@ class NotificationController {
   }
   async markAllNotificationsAsRead(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const userId = (req.user as any)?.id;
 
       if (!userId) {
         return res
@@ -153,9 +152,7 @@ class NotificationController {
         },
       });
 
-      await cacheClient.invalidateCache(
-        `/notification/${userId}`
-      )
+      await invalidateCacheSafe(getNotificationCacheKey(userId));
 
       return res
         .status(200)

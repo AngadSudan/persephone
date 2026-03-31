@@ -20,6 +20,7 @@ export interface CreateUserBody {
   email: string;
   username: string;
   password: string;
+  githubId?: string;
 }
 export interface UpdateUserBody {
   name?: string;

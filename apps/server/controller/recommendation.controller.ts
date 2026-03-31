@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import apiResponse from "../utils/apiResponse";
-import prismaClient from "../utils/prisma";
 import graphService from "../service/graph.service";
 
 class RecommendationController{

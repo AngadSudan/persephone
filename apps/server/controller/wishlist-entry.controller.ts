@@ -2,6 +2,48 @@ import type { Request, Response } from "express";
 import type { createWishlistEntry, updateWishlistEntry } from "../utils/type"
 import prismaClient from "../utils/prisma";
 import apiResponse from "../utils/apiResponse";
+import {
+    getCacheSafe,
+    invalidateManyCacheKeysSafe,
+    setCacheSafe,
+} from "../utils/cache";
+
+const getWishlistEntriesCacheKey = (wishlistId: string) =>
+    `/wishlists/${wishlistId}:entries`;
+const getWishlistEntryCacheKey = (entryId: string) =>
+    `/wishlists/entries/${entryId}`;
+const getWishlistCacheKey = (userId: string) => `/wishlists/${userId}:wishlist`;
+const getWishlistDetailCacheKey = (userId: string, wishlistId: string) =>
+    `/wishlists/${userId}:wishlist:${wishlistId}`;
+
+const invalidateWishlistEntryRelatedCaches = async ({
+    userId,
+    wishlistId,
+    entryId,
+}: {
+    userId?: string;
+    wishlistId?: string;
+    entryId?: string;
+}): Promise<void> => {
+    const keys: string[] = [];
+
+    if (wishlistId) {
+        keys.push(getWishlistEntriesCacheKey(wishlistId));
+    }
+
+    if (entryId) {
+        keys.push(getWishlistEntryCacheKey(entryId));
+    }
+
+    if (userId && wishlistId) {
+        keys.push(getWishlistCacheKey(userId));
+        keys.push(getWishlistDetailCacheKey(userId, wishlistId));
+    }
+
+    if (keys.length > 0) {
+        await invalidateManyCacheKeysSafe(keys);
+    }
+};
 class WishlistController {
     // TODO: Backend implementation pending.
     // Contract for frontend: remove user from wishlist using wishlist entry id param.
@@ -39,6 +81,12 @@ class WishlistController {
                     candidateId: data.candidateId
                 }
             })
+
+            await invalidateWishlistEntryRelatedCaches({
+                userId,
+                wishlistId,
+            });
+
             return res.status(200).json(apiResponse(200, "Wishlist entry created Successfully", createdWishlistEntry));
         } catch (error: any) {
             return res.status(200).json(apiResponse(error.statusCode, error.message, null));
@@ -73,6 +121,13 @@ class WishlistController {
                     candidateId: data.candidateId || existingEntry.candidateId,
                 }
             })
+
+            await invalidateWishlistEntryRelatedCaches({
+                userId,
+                wishlistId: updatedWishlistEntry.wishlistId,
+                entryId: updatedWishlistEntry.id,
+            });
+
             return res.status(200).json(apiResponse(200, "Wishlist entry updated Successfully", updatedWishlistEntry));
         } catch (error: any) {
             return res.status(200).json(apiResponse(error.statusCode, error.message, null));
@@ -88,7 +143,7 @@ class WishlistController {
             const data = req.body;
             if (!data) throw new Error("Please Provide all required fields");
             if (!req.user) throw new Error("user is Not Authorized");
-            const wishlistEntryId = req.params.id;
+            const wishlistEntryId = String(req.params.id);
             const existingEntry = await prismaClient.wishlistEntry.findFirst({
                 where: { id: wishlistEntryId as string }
             });
@@ -96,6 +151,14 @@ class WishlistController {
             const deletedWishlistEntry = await prismaClient.wishlistEntry.delete({
                 where: { id: wishlistEntryId as string },
             });
+
+            const userId = (req.user as any)?.id;
+            await invalidateWishlistEntryRelatedCaches({
+                userId,
+                wishlistId: existingEntry.wishlistId,
+                entryId: wishlistEntryId,
+            });
+
             return res.status(200).json(apiResponse(200, "Wishlist entry Deleted Successfully", deletedWishlistEntry));
         } catch (error: any) {
             return res.status(200).json(apiResponse(error.statusCode, error.message, null));
@@ -112,10 +175,21 @@ class WishlistController {
             if (!data) throw new Error("Please Provide all required fields");
             if (!req.user) throw new Error("user is Not Authorized");
             const wishlistEntryId = req.params.id;
+
+            const cacheKey = getWishlistEntryCacheKey(wishlistEntryId as string);
+            const cachedEntry = await getCacheSafe(cacheKey);
+
+            if (cachedEntry !== null) {
+                return res.status(200).json(apiResponse(200, "Wishlist Fetched Successfully (Cache)", cachedEntry));
+            }
+
             const existingEntry = await prismaClient.wishlistEntry.findFirst({
                 where: { id: wishlistEntryId as string }
             });
             if (!existingEntry) throw new Error("No such wishlist entry exists");
+
+            await setCacheSafe(cacheKey, existingEntry);
+
             return res.status(200).json(apiResponse(200, "Wishlist Fetched Successfully", existingEntry));
         } catch (error: any) {
             return res.status(200).json(apiResponse(error.statusCode, error.message, null));
@@ -132,10 +206,21 @@ class WishlistController {
             if (!data) throw new Error("Please Provide all required fields");
             if (!req.user) throw new Error("user is Not Authorized");
             const wishlistId = data.wishlistId;
+
+            const entriesCacheKey = getWishlistEntriesCacheKey(wishlistId);
+            const cachedEntries = await getCacheSafe(entriesCacheKey);
+
+            if (cachedEntries !== null) {
+                return res.status(200).json(apiResponse(200, "All wishlist entries fetched (Cache)", cachedEntries));
+            }
+
             const allEntries = await prismaClient.wishlistEntry.findMany({
                 where: { wishlistId: wishlistId }
             });
             if (!allEntries) throw new Error("No such wishlist entries exists");
+
+            await setCacheSafe(entriesCacheKey, allEntries);
+
             return res.status(200).json(apiResponse(200, "All wishlist entries fetched", allEntries));
         } catch (error: any) {
             return res.status(200).json(apiResponse(error.statusCode, error.message, null));

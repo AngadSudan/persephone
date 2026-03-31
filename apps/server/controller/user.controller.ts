@@ -45,6 +45,8 @@ class UserController {
       });
       if (!updatedUser) throw new Error("Failed User Updation");
 
+      await invalidateUserCaches(userId, updatedUser.username);
+
       return res
         .status(200)
         .json(apiResponse(200, "User data updated", updatedUser));
@@ -81,6 +83,8 @@ class UserController {
       // TODO: handle resume parsing
       if (!updateResume) throw new Error("Unable to update Resume");
 
+      await invalidateUserCaches(userId, updateResume.username);
+
       return res
         .status(200)
         .json(apiResponse(200, "Updated Resume", updateResume));
@@ -112,6 +116,8 @@ class UserController {
         where: { id: userId },
         data: { resume: null },
       });
+
+      await invalidateUserCaches(userId, updatedUser.username);
 
       return res
         .status(200)
@@ -148,6 +154,8 @@ class UserController {
       if (!updatedProfilePic)
         throw new Error("Unable to  update profile picture");
 
+      await invalidateUserCaches(userId, updatedProfilePic.username);
+
       return res
         .status(200)
         .json(apiResponse(200, "Updated Profile Picture", updatedProfilePic));
@@ -183,6 +191,8 @@ class UserController {
 
       if (!updatedBanner) throw new Error("Unable to update Banner");
 
+      await invalidateUserCaches(userId, updatedBanner.username);
+
       return res
         .status(200)
         .json(apiResponse(200, "Updated Banner", updatedBanner));
@@ -195,6 +205,15 @@ class UserController {
     try {
       const userId = req.user?.id;
       if (!userId) throw new Error("User id is required");
+
+      const userProfileCacheKey = getFullUserProfileCacheKey(userId);
+      const cachedUserData = await getCacheSafe(userProfileCacheKey);
+
+      if (cachedUserData !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "User data found (Cache)", cachedUserData));
+      }
 
       const userData = await prismaClient.user.findFirst({
         where: {
@@ -227,6 +246,8 @@ class UserController {
 
       if (!userData) throw new Error("Unable to fetch user data");
 
+      await setCacheSafe(userProfileCacheKey, userData);
+
       return res
         .status(200)
         .json(apiResponse(200, "User data found", userData));
@@ -239,6 +260,15 @@ class UserController {
     try {
       const userId = req.params.id;
       if (!userId) throw new Error("User id is required");
+
+      const publicProfileCacheKey = getPublicUserProfileCacheKey(userId as string);
+      const cachedUserData = await getCacheSafe(publicProfileCacheKey);
+
+      if (cachedUserData !== null) {
+        return res
+          .status(200)
+          .json(apiResponse(200, "User data found (Cache)", cachedUserData));
+      }
 
       const userData = await prismaClient.user.findFirst({
         where: {
@@ -274,6 +304,8 @@ class UserController {
       });
 
       if (!userData) throw new Error("Unable to fetch user data");
+
+      await setCacheSafe(publicProfileCacheKey, userData);
 
       return res
         .status(200)
@@ -343,6 +375,8 @@ class UserController {
           userId: dbUser.id,
         },
       });
+
+      await invalidateUserCaches(userId, dbUser.username);
 
       return res
         .status(200)
@@ -504,6 +538,17 @@ class UserController {
 
       if (!updatedExperience) throw new Error("Failed Experience Updation");
 
+      const dbUser = await prismaClient.user.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          username: true,
+        },
+      });
+
+      await invalidateUserCaches(userId, dbUser?.username);
+
       return res
         .status(200)
         .json(apiResponse(200, "Experience updated", updatedExperience));
@@ -545,6 +590,17 @@ class UserController {
           id: experienceId,
         },
       });
+
+      const dbUser = await prismaClient.user.findUnique({
+        where: {
+          id: userId,
+        },
+        select: {
+          username: true,
+        },
+      });
+
+      await invalidateUserCaches(userId, dbUser?.username);
 
       return res
         .status(200)
@@ -594,6 +650,8 @@ class UserController {
       });
 
       if (!updatedPlatformLinks) throw new Error("Unable to update Links");
+
+      await invalidateUserCaches(userId, updatedPlatformLinks.username);
 
       return res
         .status(200)
@@ -715,6 +773,8 @@ class UserController {
         });
       }
 
+      await invalidateUserCaches(dbUser.id, dbUser.username);
+
       return res.status(200).json(apiResponse(200, "graph generated", data));
     } catch (error: any) {
       console.log(error);
@@ -734,11 +794,27 @@ class UserController {
       if (!dbUser.githubToken)
         throw new Error("pleases Connect with github first");
 
+      const userGraphCacheKey = getUserGraphCacheKey(dbUser.id);
+      const cachedGraph = await getCacheSafe<{
+        isConnected: boolean;
+        graphPoints: number[];
+      }>(userGraphCacheKey);
+
+      if (cachedGraph !== null) {
+        return res.status(200).json(apiResponse(200, "graph fetched (Cache)", cachedGraph));
+      }
+
       const dbGraph = await prismaClient.developerGraph.findFirst({
         where: { userId: dbUser.id },
       });
 
       if (!dbGraph) {
+        const emptyGraph = {
+          isConnected: true,
+          graphPoints: [0, 0, 0, 0, 0],
+        };
+        await setCacheSafe(userGraphCacheKey, emptyGraph);
+
         return res.status(200).json(
           apiResponse(200, "graph fetched", {
             isConnected: true,
@@ -747,17 +823,21 @@ class UserController {
         );
       }
 
+      const graphPayload = {
+        isConnected: true,
+        graphPoints: [
+          dbGraph.systemDesign,
+          dbGraph.backend,
+          dbGraph.frontend,
+          dbGraph.tools,
+          dbGraph.devops,
+        ],
+      };
+
+      await setCacheSafe(userGraphCacheKey, graphPayload);
+
       return res.status(200).json(
-        apiResponse(200, "graph fetched", {
-          isConnected: true,
-          graphPoints: [
-            dbGraph.systemDesign,
-            dbGraph.backend,
-            dbGraph.frontend,
-            dbGraph.tools,
-            dbGraph.devops,
-          ],
-        }),
+        apiResponse(200, "graph fetched", graphPayload),
       );
     } catch (error: any) {
       console.log(error);
@@ -776,13 +856,13 @@ class UserController {
       const { friendId: userId2 } = req.body;
 
       if(userId1 === userId2) throw new Error("Cannot add yourself as friend");
-      if(!userId1 || userId2) throw new Error("User ID's are missing");
+      if(!userId1 || !userId2) throw new Error("User ID's are missing");
 
       const result = await graphService.addFriends(userId1, userId2);
 
       return res.status(200).json(
-        apiResponse(200,"Friends added", result);
-      )
+        apiResponse(200,"Friends added", result)
+      );
     } catch (error: any) {
       console.log(error);
       return res.status(200).json(
