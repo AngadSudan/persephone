@@ -12,6 +12,33 @@ import GithubService from "../service/github.service";
 import aiService from "../service/ai.service";
 import { parse } from "yaml";
 import graphService from "../service/graph.service";
+import {
+  getCacheSafe,
+  invalidateManyCacheKeysSafe,
+  setCacheSafe,
+} from "../utils/cache";
+
+const getFullUserProfileCacheKey = (userId: string) =>
+  `/users/${userId}:profile:full`;
+const getPublicUserProfileCacheKey = (username: string) =>
+  `/users/${username}:profile:public`;
+const getUserGraphCacheKey = (userId: string) => `/users/${userId}:graph`;
+
+const invalidateUserCaches = async (
+  userId: string,
+  username?: string | null,
+): Promise<void> => {
+  const keysToInvalidate = [
+    getFullUserProfileCacheKey(userId),
+    getUserGraphCacheKey(userId),
+  ];
+
+  if (username) {
+    keysToInvalidate.push(getPublicUserProfileCacheKey(username));
+  }
+
+  await invalidateManyCacheKeysSafe(keysToInvalidate);
+};
 
 class UserController {
   async updateUserInfo(req: Request, res: Response) {
