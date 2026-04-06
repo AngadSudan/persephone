@@ -9,4 +9,10 @@ recommendationRouter.get(
   recommendationController.userRecommendations,
 );
 
+recommendationRouter.get(
+  "/recommend-project",
+  authMiddleware,
+  recommendationController.projectRecommendations,
+)
+
 export default recommendationRouter;
