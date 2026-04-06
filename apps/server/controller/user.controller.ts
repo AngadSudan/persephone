@@ -285,27 +285,39 @@ class UserController {
   }
   async getFullProfileBasedonUsername(req: Request, res: Response) {
     try {
-      const userId = req.params.id;
-      if (!userId) throw new Error("User id is required");
+      const rawIdentifier = req.params.id;
+      const userIdentifier = Array.isArray(rawIdentifier)
+        ? rawIdentifier[0]
+        : rawIdentifier;
+      const freshQuery = req.query.fresh;
+      const shouldBypassCache =
+        freshQuery === "1" || freshQuery === "true";
+      if (!userIdentifier) throw new Error("User id is required");
 
-      const publicProfileCacheKey = getPublicUserProfileCacheKey(userId as string);
-      const cachedUserData = await getCacheSafe(publicProfileCacheKey);
+      const publicProfileCacheKey = getPublicUserProfileCacheKey(userIdentifier);
+      if (!shouldBypassCache) {
+        const cachedUserData = await getCacheSafe(publicProfileCacheKey);
 
-      if (cachedUserData !== null) {
-        return res
-          .status(200)
-          .json(apiResponse(200, "User data found (Cache)", cachedUserData));
+        if (cachedUserData !== null) {
+          return res
+            .status(200)
+            .json(apiResponse(200, "User data found (Cache)", cachedUserData));
+        }
       }
 
       const userData = await prismaClient.user.findFirst({
         where: {
-          username: userId as string,
+          OR: [
+            { username: userIdentifier },
+            { id: userIdentifier },
+          ],
         },
         select: {
           id: true,
           name: true,
           username: true,
           email: true,
+          githubAvatar: true,
           profileUrl: true,
           bannerUrl: true,
           headline: true,

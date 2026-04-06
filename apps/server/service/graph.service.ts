@@ -150,7 +150,7 @@ class GraphService {
     }
     async getUserRecommendation(pageNumber:number,userId:string){
       const users = await neo4jClient.getUserRecommendation(userId,pageNumber);
-      if(!users || users.length === 0) throw new Error("[NEO4J-QUERY-ERROR] - users not found in db");
+      if(!users) throw new Error("[NEO4J-QUERY-ERROR] - users not found in db");
 
       const formattedUsers = [];
 

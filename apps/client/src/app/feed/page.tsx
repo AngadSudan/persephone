@@ -1,9 +1,9 @@
 import React from 'react'
-import UserSuggestionsStrip from '@/components/Feed/UserSuggestion'
+import Feed from '@/components/Feed/Feed'
 const page = () => {
   return (
     <div>
-        <UserSuggestionsStrip />
+      <Feed />
     </div>
   )
 }
