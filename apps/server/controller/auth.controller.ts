@@ -118,6 +118,11 @@ class AuthController {
       });
       const email = data.email;
       await handleSendMail(email, generatedPassword);
+      await graphService.createUser(
+        createdInterviewer.id,
+        createdInterviewer.username,
+        createdInterviewer.email,
+      );
       if (!createdInterviewer) throw new Error("Error Creating Interviewer");
       return res
         .status(200)

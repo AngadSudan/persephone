@@ -7,6 +7,7 @@ import {
   GitGraph,
   DoorOpen,
   User,
+  UserPlus,
 } from "lucide-react";
 
 import { SiLeetcode, SiCodeforces } from "react-icons/si";
@@ -16,6 +17,8 @@ import { useColors } from "@/components/General/(Color Manager)/useColors";
 import ThemeSwitcher from "@/components/General/(Color Manager)/ThemeSwitcher";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import axiosInstance from "@/utils/axiosInstance";
 
 interface fnHandler {
   data: any;
@@ -26,6 +29,7 @@ export default function SideSection({ data }: fnHandler) {
   const router = useRouter();
 
   if (!data) return null;
+  console.log(data);
 
   const graph = data?.developerGraphs?.[0];
 
@@ -42,6 +46,30 @@ export default function SideSection({ data }: fnHandler) {
       console.log(error);
     }
   }
+
+  // make friends api call
+const makeFriends = async (friendId: string) => {
+  const toastId = toast.loading("Adding Friend...");
+
+  try {
+    const res = await axiosInstance.post(
+      `/api/v1/users/friends`,
+      {
+        friendId 
+      }
+    );
+
+    toast.success("Friend added!", { id: toastId });
+    
+    return res.data;
+
+  } catch (error: any) {
+    console.error(error);
+    toast.error(error.message || "Unable to add friend", {
+      id: toastId,
+    });
+  }
+};
 
   return (
     <div
@@ -82,6 +110,24 @@ export default function SideSection({ data }: fnHandler) {
             {data.headline}
           </p>
         </div>
+
+        <button
+          className={`
+            flex items-center justify-center gap-2
+            px-4 py-2 rounded-xl
+            ${Colors.background.primary}
+            ${Colors.border.defaultThin}
+            ${Colors.text.primary}
+            ${Colors.properties.interactiveButton}
+            ${Colors.hover.special}
+            transition-all
+          `}
+
+          onClick={()=> makeFriends(data.id)}
+        >
+          <UserPlus size={16} />
+          <span className="font-mono text-sm">Add Friend</span>
+        </button>
 
         {/* Platform Links */}
         <div className="grid grid-cols-3 gap-3 place-items-center">
