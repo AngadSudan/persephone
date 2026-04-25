@@ -12,6 +12,33 @@ import GithubService from "../service/github.service";
 import aiService from "../service/ai.service";
 import { parse } from "yaml";
 import graphService from "../service/graph.service";
+import {
+  getCacheSafe,
+  invalidateManyCacheKeysSafe,
+  setCacheSafe,
+} from "../utils/cache";
+
+const getFullUserProfileCacheKey = (userId: string) =>
+  `/users/${userId}:profile:full`;
+const getPublicUserProfileCacheKey = (username: string) =>
+  `/users/${username}:profile:public`;
+const getUserGraphCacheKey = (userId: string) => `/users/${userId}:graph`;
+
+const invalidateUserCaches = async (
+  userId: string,
+  username?: string | null,
+): Promise<void> => {
+  const keysToInvalidate = [
+    getFullUserProfileCacheKey(userId),
+    getUserGraphCacheKey(userId),
+  ];
+
+  if (username) {
+    keysToInvalidate.push(getPublicUserProfileCacheKey(username));
+  }
+
+  await invalidateManyCacheKeysSafe(keysToInvalidate);
+};
 
 class UserController {
   async updateUserInfo(req: Request, res: Response) {
@@ -258,27 +285,39 @@ class UserController {
   }
   async getFullProfileBasedonUsername(req: Request, res: Response) {
     try {
-      const userId = req.params.id;
-      if (!userId) throw new Error("User id is required");
+      const rawIdentifier = req.params.id;
+      const userIdentifier = Array.isArray(rawIdentifier)
+        ? rawIdentifier[0]
+        : rawIdentifier;
+      const freshQuery = req.query.fresh;
+      const shouldBypassCache =
+        freshQuery === "1" || freshQuery === "true";
+      if (!userIdentifier) throw new Error("User id is required");
 
-      const publicProfileCacheKey = getPublicUserProfileCacheKey(userId as string);
-      const cachedUserData = await getCacheSafe(publicProfileCacheKey);
+      const publicProfileCacheKey = getPublicUserProfileCacheKey(userIdentifier);
+      if (!shouldBypassCache) {
+        const cachedUserData = await getCacheSafe(publicProfileCacheKey);
 
-      if (cachedUserData !== null) {
-        return res
-          .status(200)
-          .json(apiResponse(200, "User data found (Cache)", cachedUserData));
+        if (cachedUserData !== null) {
+          return res
+            .status(200)
+            .json(apiResponse(200, "User data found (Cache)", cachedUserData));
+        }
       }
 
       const userData = await prismaClient.user.findFirst({
         where: {
-          username: userId as string,
+          OR: [
+            { username: userIdentifier },
+            { id: userIdentifier },
+          ],
         },
         select: {
           id: true,
           name: true,
           username: true,
           email: true,
+          githubAvatar: true,
           profileUrl: true,
           bannerUrl: true,
           headline: true,

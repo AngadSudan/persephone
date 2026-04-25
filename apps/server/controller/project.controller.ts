@@ -113,7 +113,8 @@ class ProjectController {
         },
       });
       
-      await graphService.addUserProject(newProject.id,userId,skills,title,projectUrl,repositoryUrl);
+      const graphProject = await graphService.addUserProject(newProject.id,userId,skills,title,projectUrl,repositoryUrl);
+      // if(!graphProject || graphProject.length === 0) throw new Error("[NEO4j QUERY ERROR] - Project unable to create");
 
       await invalidateProjectCaches(userId);
 
@@ -426,7 +427,10 @@ class ProjectController {
       }
 
       const project = await prismaClient.projects.findFirst({
-        where: { id, ownerId: userId },
+        where: {
+          id,
+          OR: [{ ownerId: userId }, { visibility: "PUBLIC" }],
+        },
         include: { projectMedias: true },
       });
 
