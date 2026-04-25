@@ -1,7 +1,9 @@
 "use client";
 
 import { useColors } from "@/components/General/(Color Manager)/useColors";
-import type { UIEvent } from "react";
+import { useEffect, useRef } from "react";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 type Project = {
   id: string;
@@ -11,6 +13,13 @@ type Project = {
   skills: string[];
   githubLink?: string;
   liveLink?: string;
+  owner?: {
+    id: string;
+    name: string;
+    username?: string;
+    profileUrl?: string;
+    githubAvatar?: string;
+  };
 };
 
 type Props = {
@@ -29,29 +38,52 @@ export default function SuggestedProjects({
   onLoadMore,
 }: Props) {
   const Colors = useColors();
+  const router = useRouter();
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const onProjectsScroll = (event: UIEvent<HTMLDivElement>) => {
-    if (loading || loadingMore || !hasMore) {
+  const openProjectLink = (url: string | undefined, label: string) => {
+    if (!url) {
+      toast.error(`No ${label} link is available for this project.`);
       return;
     }
 
-    const node = event.currentTarget;
-    const remaining = node.scrollHeight - node.scrollTop - node.clientHeight;
-
-    if (remaining < 160) {
-      onLoadMore();
-    }
+    window.open(url, "_blank", "noopener,noreferrer");
   };
+
+  useEffect(() => {
+    if (!loadMoreRef.current || loading || loadingMore || !hasMore) {
+      return;
+    }
+
+    const node = loadMoreRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          onLoadMore();
+        }
+      },
+      {
+        root: null,
+        rootMargin: "600px 0px 400px 0px",
+        threshold: 0,
+      },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadingMore, onLoadMore, projects.length]);
 
   return (
     <div
       className={`
-        rounded-2xl p-3 sm:p-4
+        rounded-2xl p-4 sm:p-5
         ${Colors.background.secondary}
         ${Colors.border.defaultThin}
+        shadow-sm
       `}
     >
-      <h2 className={`text-base sm:text-lg font-semibold mb-3 ${Colors.text.primary}`}>
+      <h2 className={`text-base sm:text-lg font-semibold mb-4 ${Colors.text.primary}`}>
         Suggested Projects
       </h2>
 
@@ -60,17 +92,14 @@ export default function SuggestedProjects({
       ) : projects.length === 0 ? (
         <p className={`text-sm ${Colors.text.secondary}`}>No recommendations found</p>
       ) : (
-        <div
-          className="grid grid-cols-1 xl:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1"
-          onScroll={onProjectsScroll}
-        >
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {projects.map((project) => (
             <div
               key={project.id}
               className={`
-                group rounded-xl shadow-sm overflow-hidden
-                transition-all duration-300 ease-out
-                hover:-translate-y-1 hover:shadow-xl
+                group rounded-2xl overflow-hidden
+                transition-all duration-300 ease-out transform-gpu
+                hover:-translate-y-1 hover:scale-[1.01] hover:shadow-xl
                 ${Colors.background.primary}
                 ${Colors.border.defaultThin}
               `}
@@ -90,6 +119,29 @@ export default function SuggestedProjects({
               </div>
 
               <div className="p-4">
+                {project.owner && (
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/u/${project.owner?.username || project.owner?.id}`)}
+                    className={`mb-3 inline-flex items-center gap-2 rounded-full px-2.5 py-1 cursor-pointer ${Colors.background.secondary} ${Colors.border.defaultThin} ${Colors.properties.interactiveButton}`}
+                  >
+                    <div className={`h-7 w-7 rounded-full overflow-hidden ${Colors.background.accent} ${Colors.border.defaultThin} flex items-center justify-center text-[11px] font-semibold ${Colors.text.secondary}`}>
+                      {project.owner.profileUrl || project.owner.githubAvatar ? (
+                        <img
+                          src={project.owner.profileUrl || project.owner.githubAvatar}
+                          alt={project.owner.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        project.owner.name?.charAt(0)?.toUpperCase()
+                      )}
+                    </div>
+                    <span className={`text-xs sm:text-sm font-medium ${Colors.text.secondary}`}>
+                      {project.owner.name}
+                    </span>
+                  </button>
+                )}
+
                 <h3 className={`text-lg font-bold line-clamp-1 transition-colors duration-300 ${Colors.text.primary}`}>
                   {project.title}
                 </h3>
@@ -112,29 +164,37 @@ export default function SuggestedProjects({
                 )}
 
                 <div className="flex gap-3 mt-3 flex-wrap">
-                {project.githubLink && (
-                    <span
-                      className={`
-                      text-sm px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:scale-105
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openProjectLink(project.githubLink, "GitHub");
+                  }}
+                  className={`
+                      text-sm px-3 py-1.5 rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:scale-105
                       ${Colors.border.defaultThin}
                       ${Colors.text.primary}
+                      ${project.githubLink ? "cursor-pointer" : "cursor-not-allowed opacity-65"}
                     `}
-                  >
+                >
                     GitHub
-                    </span>
-                )}
+                    </button>
 
-                {project.liveLink && (
-                    <span
-                      className={`
-                      text-sm px-3 py-1.5 rounded-full cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:scale-105
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openProjectLink(project.liveLink, "Live");
+                  }}
+                  className={`
+                      text-sm px-3 py-1.5 rounded-full transition-all duration-200 hover:-translate-y-0.5 hover:scale-105
                       ${Colors.background.special}
                       ${Colors.text.inverted}
+                      ${project.liveLink ? "cursor-pointer" : "cursor-not-allowed opacity-65"}
                     `}
-                  >
+                >
                     Live
-                    </span>
-                )}
+                    </button>
                 </div>
               </div>
             </div>
@@ -151,6 +211,8 @@ export default function SuggestedProjects({
               End of project suggestions.
             </div>
           )}
+
+          <div ref={loadMoreRef} className="xl:col-span-2 h-1" aria-hidden="true" />
         </div>
       )}
     </div>

@@ -26,7 +26,7 @@ function AnyUserV1(props: fnHandler) {
 
       console.log(result);
       setData(result.data);
-      setUserExperiences(result.data.userExperiences || []);
+      setUserExperiences(result.data.userExperiences ?? []);
       setProjects(result.data.projects || []);
       setGraphData(result.data.developerGraphs[0]);
     } catch (err) {
