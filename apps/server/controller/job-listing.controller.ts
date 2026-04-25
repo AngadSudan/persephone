@@ -4,6 +4,7 @@ import apiResponse from "../utils/apiResponse";
 import type { JobListing } from "../utils/type";
 import type { JobApplication } from "../utils/type";
 import cloudinaryService from "../service/Cloudinary.service";
+import cacheClient from "../utils/redis";
 
 import graphService from "../service/graph.service";
 
@@ -23,7 +24,13 @@ const getInterviewSuiteApplicationsPageZeroCacheKey = (jobId: string) =>
 class JobListingController {
   async createJobListing(req: Request, res: Response) {
     try {
-      const orgId = (req.user as any)?.id;
+      let orgId: string | undefined = undefined;
+      if(req.user?.type === "ORGANIZATION") {
+      orgId = (req.user as any)?.id;}
+      else if(req.user?.type === "INTERVIEWER"){
+        const interviewer = req.user as any;
+        orgId = interviewer.organizationId;
+      }
       const data: JobListing = req.body;
 
       if (!orgId) {
@@ -31,7 +38,6 @@ class JobListingController {
           .status(400)
           .json(apiResponse(400, "Organization ID not Found!", null));
       }
-
       const jobListing = await prismaClient.jobListing.create({
         data: {
           jobDescription: data.jobDescription,
@@ -45,7 +51,7 @@ class JobListingController {
       });
 
       await cacheClient.invalidateCache(`/jobListing/${orgId}`);
-      await graphService.addJobListing(orgId,data.skills,jobListing.id,orgId, data.name, data.stipend); // params to be passed.
+      // await graphService.addJobListing(orgId,data.skills,jobListing.id,orgId, data.name, data.stipend); // params to be passed.
       return res
         .status(201)
         .json(
@@ -59,10 +65,16 @@ class JobListingController {
   async updateJobListing(req: Request, res: Response) {
     try {
       const jobListId = String(req.params.jobListId);
-      const organization = req.user as any;
+      let orgId: string | undefined = undefined;
+      if(req.user?.type === "ORGANIZATION") {
+      orgId = (req.user as any)?.id;}
+      else if(req.user?.type === "INTERVIEWER"){
+        const interviewer = req.user as any;
+        orgId = interviewer.organizationId;
+      }
       const data = req.body;
 
-      if (organization?.type !== "ORGANIZATION") {
+      if (req.user?.type !== "ORGANIZATION") {
         throw new Error(
           "Not Authorized ! Only Organizations can update Job Listing",
         );
@@ -80,7 +92,7 @@ class JobListingController {
         },
       });
 
-      if (!job || job.organizationId !== organization.id) {
+      if (!job || job.organizationId !== orgId) {
         return res.status(403).json(apiResponse(403, "Not Authorized !", null));
       }
 
@@ -98,7 +110,7 @@ class JobListingController {
         },
       });
 
-      await invalidateCacheSafe(getOrgJobListingsCacheKey(organization.id));
+      await invalidateCacheSafe(getOrgJobListingsCacheKey(orgId));
 
       await invalidateCacheSafe(getJobListingByIdCacheKey(jobListId));
 
@@ -115,10 +127,16 @@ class JobListingController {
   async deleteJobListing(req: Request, res: Response) {
     try {
       const jobListId = String(req.params.jobListId);
-      const organization = req.user as any;
+      let orgId: string | undefined = undefined;
+      if(req.user?.type === "ORGANIZATION") {
+      orgId = (req.user as any)?.id;}
+      else if(req.user?.type === "INTERVIEWER"){
+        const interviewer = req.user as any;
+        orgId = interviewer.organizationId;
+      }
       const resumeFile = req.file;
 
-      if (organization?.type !== "ORGANIZATION")
+      if (req.user?.type !== "ORGANIZATION")
         throw new Error("Only Organizations can Delete Job Listing");
 
       if (!req.params.jobListId) {
@@ -127,7 +145,7 @@ class JobListingController {
           .json(apiResponse(400, "Job List ID Missing", null));
       }
 
-      await invalidateCacheSafe(getOrgJobListingsCacheKey(organization.id));
+      await invalidateCacheSafe(getOrgJobListingsCacheKey(orgId));
       await invalidateCacheSafe(getJobListingByIdCacheKey(jobListId));
 
       const job = await prismaClient.jobListing.findUnique({
@@ -136,7 +154,7 @@ class JobListingController {
         },
       });
 
-      if (!job || job.organizationId !== organization.id) {
+      if (!job || job.organizationId !== orgId) {
         return res.status(403).json(apiResponse(403, "Not Authorized !", null));
       }
 
@@ -239,7 +257,14 @@ class JobListingController {
   }
   async getAllJobListings(req: Request, res: Response) {
     try {
-      const orgId = (req.user as any)?.id;
+      let orgId: string | undefined = undefined;
+
+      if (req.user?.type === "ORGANIZATION") {
+        orgId = (req.user as any)?.id;
+      } else if (req.user?.type === "INTERVIEWER") {
+        const interviewer = req.user as any;
+        orgId = interviewer.organizationId;
+      }
 
       if (!orgId) {
         return res
@@ -251,17 +276,17 @@ class JobListingController {
         getOrgJobListingsCacheKey(orgId),
       );
 
-      if (cacheJobApplication !== null) {
-        return res
-          .status(200)
-          .json(
-            apiResponse(
-              200,
-              "Job Applications Fetched (Cache) !",
-              cacheJobApplication,
-            ),
-          );
-      }
+      // if (cacheJobApplication !== null) {
+      //   return res
+      //     .status(200)
+      //     .json(
+      //       apiResponse(
+      //         200,
+      //         "Job Applications Fetched (Cache) !",
+      //         cacheJobApplication,
+      //       ),
+      //     );
+      // }
 
       const allJobListing = await prismaClient.jobListing.findMany({
         where: {
