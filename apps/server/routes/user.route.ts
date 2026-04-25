@@ -39,6 +39,7 @@ userRouter.put(
 );
 
 userRouter.get("/get-profile", authMiddleware, UserController.getFullProfile);
+userRouter.get("/feed-users", authMiddleware, UserController.getFeedUsers);
 userRouter.get(
   "/profile/:id",
   authMiddleware,

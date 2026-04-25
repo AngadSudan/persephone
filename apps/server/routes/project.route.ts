@@ -47,6 +47,11 @@ projectRouter.get(
   projectController.getAllUserProjects,
 );
 projectRouter.get(
+  "/feed-projects",
+  authMiddleware,
+  projectController.getFeedProjects,
+);
+projectRouter.get(
   "/get-projects-by-batch",
   authMiddleware,
   projectController.getUserProjectsByBatch,

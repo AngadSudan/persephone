@@ -3,6 +3,7 @@
 import { UserPlus, Github, Linkedin } from "lucide-react";
 import toast from "react-hot-toast";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
+import { useRouter } from "next/navigation";
 
 type Project = {
   id: string;
@@ -39,6 +40,13 @@ export default function UserSuggestionsStrip({
 }: Props) {
   const Colors = useColors();
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+  const router = useRouter();
+
+  const openUserProfile = (user: User) => {
+    const identifier = user.username || user.id;
+    if (!identifier) return;
+    router.push(`/u/${identifier}`);
+  };
 
   const makeFriends = async (friendId: string) => {
     const toastId = toast.loading("Connecting...");
@@ -78,27 +86,32 @@ export default function UserSuggestionsStrip({
   return (
     <div
       className={`
+        w-full max-w-full overflow-hidden
         ${Colors.background.primary}
         ${Colors.border.defaultThin}
-        rounded-xl p-3 flex flex-col gap-3
+        rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-sm
       `}
     >
-      <h2 className={`${Colors.text.primary} font-semibold text-sm`}>
+      <h2 className={`${Colors.text.primary} font-semibold text-sm sm:text-base`}>
         Suggested Connections
       </h2>
 
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-1">
+      <div className="w-full max-w-full flex gap-4 overflow-x-auto overflow-y-hidden scrollbar-hide pb-1">
         {users.map((user) => (
           <div
             key={user.id}
             className={`
-              min-w-[228px] rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col
+              min-w-59 shrink-0 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col
               ${Colors.background.secondary}
               ${Colors.border.defaultThin}
             `}
           >
             {/* 🔹 Banner */}
-            <div className={`h-12 w-full relative ${Colors.background.accent}`}>
+            <button
+              type="button"
+              onClick={() => openUserProfile(user)}
+              className={`h-12 w-full relative text-left cursor-pointer ${Colors.background.accent}`}
+            >
               {user.bannerUrl && (
                 <img
                   src={user.bannerUrl}
@@ -109,7 +122,7 @@ export default function UserSuggestionsStrip({
 
               {/* Avatar */}
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-                <div className={`w-20 h-20 rounded-full border-[3px] border-[var(--bg-secondary)] overflow-hidden ${Colors.background.accent} flex items-center justify-center text-xl font-semibold ${Colors.text.secondary}`}>
+                <div className={`w-20 h-20 rounded-full border-[3px] border-(--bg-secondary) overflow-hidden ${Colors.background.accent} flex items-center justify-center text-xl font-semibold ${Colors.text.secondary}`}>
                   {user.profileUrl ? (
                     <img
                       src={user.profileUrl}
@@ -121,22 +134,30 @@ export default function UserSuggestionsStrip({
                   )}
                 </div>
               </div>
-            </div>
+            </button>
 
             {/* 🔹 Content */}
             <div className="pt-14 px-3 pb-3 flex flex-col gap-1.5 text-center">
-              <p className={`font-semibold text-[13px] leading-5 uppercase tracking-[0.2px] ${Colors.text.primary}`}>
+              <button
+                type="button"
+                onClick={() => openUserProfile(user)}
+                className={`font-semibold text-[13px] leading-5 uppercase tracking-[0.2px] cursor-pointer ${Colors.text.primary} ${Colors.hover.textSpecial}`}
+              >
                 {user.name}
-              </p>
+              </button>
 
               {!!user.username && (
-                <p className={`text-[12px] -mt-0.5 ${Colors.text.secondary}`}>
+                <button
+                  type="button"
+                  onClick={() => openUserProfile(user)}
+                  className={`text-[12px] -mt-0.5 cursor-pointer ${Colors.text.secondary} ${Colors.hover.textSpecial}`}
+                >
                   @{user.username}
-                </p>
+                </button>
               )}
 
               {/* Headline */}
-              <p className={`text-[12px] leading-5 min-h-[38px] line-clamp-2 px-1 ${Colors.text.secondary}`}>
+              <p className={`text-[12px] leading-5 min-h-9.5 line-clamp-2 px-1 ${Colors.text.secondary}`}>
                 {user.headline?.trim() || "No professional headline added yet"}
               </p>
 
@@ -144,7 +165,7 @@ export default function UserSuggestionsStrip({
               <button
                 onClick={() => makeFriends(user.id)}
                 className={`
-                  mt-2 flex items-center justify-center gap-1.5 text-[13px] font-semibold py-1.5 rounded-full
+                  mt-2 flex items-center justify-center gap-1.5 text-[13px] font-semibold py-1.5 rounded-full cursor-pointer
                   ${Colors.background.special}
                   ${Colors.text.inverted}
                   ${Colors.properties.interactiveButton}
@@ -161,6 +182,7 @@ export default function UserSuggestionsStrip({
                       href={user.githubUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(event) => event.stopPropagation()}
                       className={`p-1 rounded-md ${Colors.text.secondary} ${Colors.hover.textSpecial}`}
                       aria-label="GitHub profile"
                     >
@@ -172,6 +194,7 @@ export default function UserSuggestionsStrip({
                       href={user.linkedinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(event) => event.stopPropagation()}
                       className={`p-1 rounded-md ${Colors.text.secondary} ${Colors.hover.textSpecial}`}
                       aria-label="LinkedIn profile"
                     >

@@ -309,7 +309,7 @@ class UserController {
         where: {
           OR: [
             { username: userIdentifier },
-            { id: userIdentifier },
+            // { id: userIdentifier },
           ],
         },
         select: {
@@ -423,6 +423,46 @@ class UserController {
     } catch (error: any) {
       console.error(error);
       return res.status(400).json(apiResponse(400, error.message, null));
+    }
+  }
+  async getFeedUsers(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json(apiResponse(401, "Unauthorized", null));
+      }
+
+      const users = await prismaClient.user.findMany({
+        where: {
+          id: {
+            not: userId,
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          profileUrl: true,
+          githubAvatar: true,
+          bannerUrl: true,
+          headline: true,
+          userInfo: true,
+          githubUrl: true,
+          linkedinUrl: true,
+          projects: {
+            take: 3,
+          },
+        },
+      });
+
+      return res.status(200).json(apiResponse(200, "Users Fetched!", users));
+    } catch (error: any) {
+      console.log(error);
+      return res.status(500).json(apiResponse(500, error.message, null));
     }
   }
   async updateExperience(req: Request, res: Response) {

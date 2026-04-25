@@ -431,7 +431,18 @@ class ProjectController {
           id,
           OR: [{ ownerId: userId }, { visibility: "PUBLIC" }],
         },
-        include: { projectMedias: true },
+        include: {
+          projectMedias: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              profileUrl: true,
+              githubAvatar: true,
+            },
+          },
+        },
       });
 
       if (!project) {
@@ -476,6 +487,48 @@ class ProjectController {
       await setCacheSafe(projectsListCacheKey, projects)
 
       return res.status(200).json(apiResponse(200, "Success", projects));
+    } catch (error: any) {
+      console.log(error);
+      return res.status(500).json(apiResponse(500, error.message, null));
+    }
+  }
+
+  async getFeedProjects(req: Request, res: Response) {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json(apiResponse(401, "Unauthorized", null));
+      }
+
+      const projects = await prismaClient.projects.findMany({
+        where: {
+          publishStatus: "PUBLISHED",
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          coverImage: true,
+          skills: true,
+          repositoryUrl: true,
+          projectUrl: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              profileUrl: true,
+              githubAvatar: true,
+            },
+          },
+        },
+      });
+
+      return res.status(200).json(apiResponse(200, "Projects Fetched!", projects));
     } catch (error: any) {
       console.log(error);
       return res.status(500).json(apiResponse(500, error.message, null));
