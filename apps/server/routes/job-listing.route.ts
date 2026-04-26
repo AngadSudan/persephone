@@ -13,6 +13,8 @@ jobListingRouter.get("/get-job-applications/:jobListId",authMiddleware,jobListin
 
 jobListingRouter.get("/get-all-job-listing",authMiddleware,jobListingController.getAllJobListings);
 
+jobListingRouter.get("/get-job-listings-count",authMiddleware,jobListingController.getJobListingsCount);
+
 jobListingRouter.get("/get-job-listing-by-id/:jobId",authMiddleware,jobListingController.getJobListingById);
 
 jobListingRouter.put("/apply-to-job/:jobId",authMiddleware,jobListingController.applyToJob);

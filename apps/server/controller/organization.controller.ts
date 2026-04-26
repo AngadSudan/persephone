@@ -399,5 +399,31 @@ class OrganizationController {
       return res.status(200).json(apiResponse(500, error.message, null));
     }
   }
+
+  async getInterviewersCount(req: Request, res: Response) {
+    try {
+      const authUser = req.user as { id?: string; type?: string } | undefined;
+
+      if (authUser?.type !== "ORGANIZATION") {
+        return res
+          .status(403)
+          .json(apiResponse(403, "Only organizations can access this", null));
+      }
+
+      const orgId = authUser?.id;
+      if (!orgId) throw new Error("Organization id not found");
+
+      const totalInterviewers = await prismaClient.interviewer.count({
+        where: { orgId },
+      });
+
+      return res
+        .status(200)
+        .json(apiResponse(200, "Interviewers Count Fetched Successfully !", { totalInterviewers }));
+    } catch (error: any) {
+      console.log(error);
+      return res.status(200).json(apiResponse(500, error.message, null));
+    }
+  }
 }
 export default new OrganizationController();

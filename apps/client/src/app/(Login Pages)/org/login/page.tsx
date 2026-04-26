@@ -35,7 +35,7 @@ export default function OrgLoginPage() {
             const result = await res.data;
             console.log(result);
             toast.success("Logged in successfully!");
-            router.push("/profile");
+            router.push("/org-dashboard");
         } catch (err) {
             toast.error("Failed to login. Please try again.");
             console.error(err);
