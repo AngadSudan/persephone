@@ -44,8 +44,16 @@ class JobListingController {
         },
       });
 
-      await cacheClient.invalidateCache(`/jobListing/${orgId}`);
-      await graphService.addJobListing(orgId,data.skills,jobListing.id,orgId, data.name, data.stipend); // params to be passed.
+      await invalidateCacheSafe(getOrgJobListingsCacheKey(orgId));
+      const listingData = data as any;
+      await graphService.addJobListing(
+        orgId,
+        listingData.skills ?? [],
+        jobListing.id,
+        orgId,
+        listingData.name ?? data.jobRole,
+        listingData.stipend ?? data.payment,
+      );
       return res
         .status(201)
         .json(
@@ -325,6 +333,20 @@ class JobListingController {
       return res.status(200).json(apiResponse(400, error.message, null));
     }
   }
+  
+  async getJobListingsCount(req: Request, res: Response) {
+    try {
+      const totalListings = await prismaClient.jobListing.count();
+
+      return res
+        .status(200)
+        .json(apiResponse(200, "Job Listings Count Fetched Successfully !", { totalListings }));
+    } catch (error: any) {
+      console.log(error);
+      return res.status(200).json(apiResponse(500, error.message, null));
+    }
+  }
+
   async getJobListingById(req: Request, res: Response) {
     try {
       const jobId = String(req.params.jobId);

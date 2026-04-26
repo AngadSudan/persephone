@@ -6,6 +6,7 @@ import UserSuggestionsStrip from "./UserSuggestion";
 import SuggestedProjects from "./ProjectSuggestions";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import ShareProjectPrompt from "@/components/Feed/ShareProjectPrompt";
+import Sidebar from "../General/Sidebar";
 
 type User = {
     id: string;
@@ -288,17 +289,13 @@ const Feed = () => {
     }, [projectsLoading, loadingMoreProjects, hasMoreProjects]);
 
     return (
-        <div className={`w-full ${Colors.background.primary} ${Colors.text.primary}`}>
-            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">
-                <div className="hidden lg:block">
-                    <div
-                        className={`h-[calc(100vh-2rem)] rounded-2xl ${Colors.border.defaultThin} ${Colors.background.secondary}`}
-                    >
-                        {/* Placeholder for future universal navbar */}
-                    </div>
+        <div className={`w-full h-screen overflow-hidden p-4 ${Colors.background.primary}`}>
+            <div className="grid h-full min-h-0 grid-cols-8 grid-rows-1 gap-5 overflow-hidden">
+                <div className="h-full min-h-0 col-span-2">
+                        <Sidebar />
                 </div>
 
-                <div className="h-[calc(100vh-2rem)] overflow-y-auto pr-1 space-y-4">
+                <div className="h-full min-h-0 space-y-4 overflow-y-auto pr-1 col-span-6">
                     <ShareProjectPrompt />
 
                     <UserSuggestionsStrip

@@ -194,12 +194,12 @@ export default function SideSection() {
                         <p
                             className={`${Colors.text.primary} font-mono text-2xl leading-none`}
                         >
-                            {data?.name ?? "Organization"}
+                            {orgInfo?.name ?? "Organization"}
                         </p>
                         <p
                             className={`text-md ${Colors.text.secondary} font-mono font-bold`}
                         >
-                            {data?.username ?? "@username"}
+                            {orgInfo?.username ?? "@username"}
                         </p>
                     </div>
 

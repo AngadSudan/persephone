@@ -90,7 +90,6 @@ class ProjectController {
       }
 
       const skills = data.skills?.map((skill) => skill.trim());
-      // TODO: Upload file to cloudinary.
       let coverImageUrl = "";
       
       const newProject = await prismaClient.projects.create({
@@ -115,7 +114,6 @@ class ProjectController {
       
       const graphProject = await graphService.addUserProject(newProject.id,userId,skills,title,projectUrl,repositoryUrl);
       // if(!graphProject || graphProject.length === 0) throw new Error("[NEO4j QUERY ERROR] - Project unable to create");
-
       await invalidateProjectCaches(userId);
 
       return res

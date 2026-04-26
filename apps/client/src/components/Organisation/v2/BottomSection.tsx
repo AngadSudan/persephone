@@ -9,8 +9,11 @@ export default function BottomSection() {
     <div
       className={`${Colors.background.secondary} rounded-xl gap-4 p-4 pt-0 w-full h-full grid grid-cols-1`}
     >
-      <div className={`${Colors.background.primary} rounded-xl p-2`}><InterviewerList /></div>
-      <div className={`${Colors.background.primary} rounded-xl p-4`}><JobListings /></div>
+      <div
+        className={`${Colors.background.primary} rounded-xl p-4 flex justify-around gap-4`}
+      >
+        <JobListings /> <InterviewerList />
+      </div>
     </div>
   );
 }

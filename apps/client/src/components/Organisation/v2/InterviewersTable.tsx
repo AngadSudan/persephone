@@ -4,8 +4,10 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import Spinner from "@/components/General/Spinner";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
-import { Trash2, Eye, Plus, Search, X, User, AtSign, Mail, ChevronRight } from "lucide-react";
+import { Trash2, Eye, Plus, Search, X, User, Mail, ChevronRight, ChevronLeft, IdCard } from "lucide-react";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import axiosInstance from "@/utils/axiosInstance";
 
 type Interviewer = {
     id: string;
@@ -18,16 +20,16 @@ type Interviewer = {
 
 /* ── reusable pill badge ── */
 function Pill({ children }: { children: React.ReactNode }) {
+    const Colors = useColors();
     return (
-        <span className="bg-[#64e5af12] border border-[#64e5af30] text-[#64e5af] text-xs px-2 py-0.5 rounded-full">
+        <span className={`text-sm px-2 py-0.5 rounded-full ${Colors.background.special} ${Colors.text.inverted} font-mono font-semibold`}>
             {children}
         </span>
     );
 }
 async function handleCreateInterviewer(data: { name: string; username: string; email: string }) {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
     try {
-        await axios.post(`${backendUrl}/api/v1/auth/register/interviewer`, data, { withCredentials: true });
+        await axiosInstance.post(`/api/v1/organizations/create-interviewer`, data, { withCredentials: true });
         toast.success("Interviewer created successfully");
     } catch (err) {
         console.error("Failed to create interviewer", err);
@@ -42,6 +44,7 @@ function Modal({
     children: React.ReactNode;
     onClose: () => void;
 }) {
+    const Colors = useColors();
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(18,19,19,0.85)] backdrop-blur-[6px]"
@@ -50,12 +53,10 @@ function Modal({
             <div
                 onClick={(e) => e.stopPropagation()}
                 style={{
-                    background: "#1e1e1e",
-                    border: "1px solid #64e5af25",
                     boxShadow: "0 0 60px #64e5af15, 0 24px 48px rgba(0,0,0,0.6)",
                     animation: "modalIn 0.2s cubic-bezier(.22,1,.36,1)",
                 }}
-                className="w-[440px] rounded-2xl p-7 relative"
+                className={`w-[440px] rounded-2xl p-7 relative ${Colors.background.secondary} ${Colors.text.primary}`}
             >
                 {children}
             </div>
@@ -73,35 +74,40 @@ function Modal({
 /* ── styled input ── */
 function Field({
     icon: Icon,
+    label,
     placeholder,
     value,
     onChange,
 }: {
     icon: React.ElementType;
+    label: string;
     placeholder: string;
     value?: string;
     onChange?: (v: string) => void;
 }) {
+    const Colors = useColors();
     return (
-        <div
-            style={{ border: "1px solid #64e5af20", background: "#121313" }}
-            className="flex items-center gap-3 rounded-xl px-4 py-3 focus-within:outline focus-within:outline-1"
-        >
-            <Icon size={15} color="#64e5af" className="flex-shrink-0 opacity-70" />
-            <input
-                placeholder={placeholder}
-                value={value}
-                onChange={(e) => onChange?.(e.target.value)}
-                style={{
-                    background: "transparent",
-                    color: "#ffffff",
-                    fontSize: "0.875rem",
-                    outline: "none",
-                    width: "100%",
-                    fontFamily: "inherit",
-                }}
-                className="placeholder:text-white/25"
-            />
+        <div className="space-y-1.5 font-mono">
+            <label style={{ fontSize: "0.72rem", fontFamily: "'DM Mono', monospace" }} className={`block ${Colors.text.special}`}>
+                {label}
+            </label>
+            <div
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 focus-within:outline-1 ${Colors.background.primary} ${Colors.text.primary} transition-colors duration-200 ${Colors.border.specialThin}`}
+            >
+                <Icon size={15} className={`shrink-0 opacity-70 ${Colors.text.special}`} />
+                <input
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={(e) => onChange?.(e.target.value)}
+                    style={{
+                        fontSize: "0.875rem",
+                        outline: "none",
+                        width: "100%",
+                        fontFamily: "inherit",
+                    }}
+                    className={`placeholder:text-white/75 ${Colors.text.primary}`}
+                />
+            </div>
         </div>
     );
 }
@@ -109,6 +115,7 @@ function Field({
 export default function InterviewersTable() {
     const Colors = useColors();
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+    const router = useRouter();
 
     const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
     const [loading, setLoading] = useState(true);
@@ -118,16 +125,16 @@ export default function InterviewersTable() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [addForm, setAddForm] = useState({ name: "", username: "", email: "" });
     const [deletingId, setDeletingId] = useState<string | null>(null);
-
+    
     async function fetchInterviewers() {
         try {
-            const res = await axios.get(
-                `${backendUrl}/api/v1/organizations/interviewers`,
-                { withCredentials: true }
-            );
-            setInterviewers(res.data.data || []);
+            const res = await axiosInstance.get(`/api/v1/organizations/interviewers`, { withCredentials: true });
+            const data = res.data
+            console.log("Fetched interviewers:", data);
+            setInterviewers(Array.isArray(data?.data) ? data.data : []);
         } catch (err) {
             console.error("Failed to fetch interviewers", err);
+            setInterviewers([]);
         } finally {
             setLoading(false);
         }
@@ -138,15 +145,15 @@ export default function InterviewersTable() {
     async function deleteInterviewer(id: string) {
         setDeletingId(id);
         try {
-            await axios.delete(`${backendUrl}/api/v1/organizations/interviewers/${id}`, {
+            await axiosInstance.delete(`/api/v1/organizations/interviewers/${id}`, {
                 withCredentials: true,
             });
             setInterviewers((prev) => prev.filter((i) => i.id !== id));
+            toast.success("Interviewer deleted");
         } catch (err) {
             toast.error("Failed to delete interviewer");
             console.error("Delete failed", err);
         } finally {
-            toast.success("Interviewer deleted");
             setDeletingId(null);
         }
     }
@@ -172,8 +179,8 @@ export default function InterviewersTable() {
     if (loading) {
         return (
             <div
-                style={{ background: "#121313", minHeight: "300px" }}
-                className="flex flex-col items-center justify-center gap-4 rounded-2xl"
+                style={{ minHeight: "300px" }}
+                className={`flex flex-col items-center justify-center gap-4 rounded-2xl ${Colors.background.primary}`}
             >
                 <div
                     style={{
@@ -185,7 +192,7 @@ export default function InterviewersTable() {
                         animation: "spin 0.8s linear infinite",
                     }}
                 />
-                <p style={{ color: "#64e5af80", fontFamily: "'DM Mono', monospace", fontSize: "0.75rem" }}>
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.75rem" }} className={`${Colors.text.special} opacity-80`}>
                     loading interviewers...
                 </p>
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -198,34 +205,33 @@ export default function InterviewersTable() {
 
 
             <div
-                style={{
-                    fontFamily: "'Syne', sans-serif",
-                    color: "#ffffff",
-                }}
-                className="space-y-5"
+                className="space-y-5 mono"
             >
 
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-2 mono">
+                    <button className={`${Colors.background.primary} ${Colors.text.primary} ${Colors.properties.interactiveButton} p-2 rounded-md`} onClick={() => {
+                      router.push("/org-dashboard")
+                    }
+                    }><ChevronLeft /></button>
 
-                    <div className="bg-[#1e1e1e] border border-[#64e5af18] rounded-[14px] flex items-center gap-[10px] px-[14px] py-[9px] w-[80%] transition-colors duration-200">
-                        <Search size={14} color="#64e5af" style={{ opacity: 0.6, flexShrink: 0 }} />
+                    <div className={`${Colors.background.primary} ${Colors.text.primary} rounded-md flex items-center gap-[10px] px-[14px] py-[9px] w-[80%] transition-colors duration-200`}>
+                        <Search className={`${Colors.text.special}`} size={14} style={{ opacity: 0.6, flexShrink: 0 }} />
                         <input
                             placeholder="Search interviewers…"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             style={{
                                 background: "transparent",
-                                color: "#fff",
                                 fontSize: "0.84rem",
                                 outline: "none",
                                 width: "100%",
                                 fontFamily: "'Syne', sans-serif",
                             }}
-                            className="placeholder:text-white/25"
+                            className={`placeholder:text-white/25 ${Colors.text.primary}`}
                         />
                         {search && (
                             <button onClick={() => setSearch("")} className="opacity-40 hover:opacity-70">
-                                <X size={13} color="#fff" />
+                                <X size={22} className="hover:text-red-700 transition-colors duration-100 active:scale-90 cursor-pointer" />
                             </button>
                         )}
                     </div>
@@ -234,7 +240,7 @@ export default function InterviewersTable() {
 
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="iv-btn-primary flex items-center gap-2 bg-[#64e5af] text-[#121313] px-4 py-2 rounded-lg"
+                        className={` ${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} font-semibold flex items-center gap-2 px-2 py-2 rounded-lg font-mono`}
                     >
                         <Plus size={15} />
                         Add Interviewer
@@ -243,12 +249,8 @@ export default function InterviewersTable() {
 
                 {/* ── TABLE ── */}
                 <div
-                    style={{
-                        background: "#1e1e1e",
-                        border: "1px solid #64e5af18",
-                        borderRadius: "18px",
-                        overflow: "hidden",
-                    }}
+                    style={{ borderRadius: "18px", overflow: "hidden" }}
+                    className={`${Colors.background.secondary} ${Colors.border.defaultThin}`}
                 >
                     {/* table header */}
                     <div
@@ -256,9 +258,8 @@ export default function InterviewersTable() {
                             display: "grid",
                             gridTemplateColumns: "2fr 1.5fr 2fr 100px",
                             padding: "12px 20px",
-                            borderBottom: "1px solid #64e5af12",
-                            background: "#121313",
                         }}
+                        className={`${Colors.border.defaultThinBottom} ${Colors.background.primary} ${Colors.text.primary} font-mono font-semibold`}
                     >
                         {["Interviewer", "Username", "Email", ""].map((h, i) => (
                             <span
@@ -274,7 +275,8 @@ export default function InterviewersTable() {
                     {/* rows */}
                     {filtered.length === 0 ? (
                         <div
-                            style={{ padding: "48px 24px", textAlign: "center", color: "#64e5af40" }}
+                            style={{ padding: "48px 24px", textAlign: "center" }}
+                            className={`${Colors.text.primary} opacity-40`}
                         >
                             <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.8rem" }}>
                                 no interviewers found
@@ -288,19 +290,18 @@ export default function InterviewersTable() {
                                     setSelectedInterviewer(it);
                                     setEditData({ ...it });
                                 }}
-                                className="iv-row cursor-pointer hover:bg-[#64e5af10] transition-colors"
+                                className={`iv-row cursor-pointer transition-colors ${Colors.text.primary} font-mono ${Colors.hover.special} ${idx < filtered.length - 1 ? Colors.border.specialThinBottom : ""}`}
                                 style={{
                                     display: "grid",
                                     gridTemplateColumns: "2fr 1.5fr 2fr 100px",
                                     padding: "14px 20px",
                                     alignItems: "center",
-                                    borderBottom: idx < filtered.length - 1 ? "1px solid #64e5af0a" : "none",
                                     animationDelay: `${idx * 40}ms`,
                                 }}
                             >
                                 {/* name + avatar */}
                                 <div className="flex items-center gap-2">
-                                    <span className="font-semibold">{it.name}</span>
+                                    <span className="font-semibold font-mono">{it.name}</span>
                                     <ChevronRight size={13} className="iv-chevron" color="#64e5af" />
                                 </div>
 
@@ -310,7 +311,7 @@ export default function InterviewersTable() {
                                 </div>
 
                                 {/* email */}
-                                <span style={{ color: "#ffffff70", fontSize: "0.84rem", fontFamily: "'DM Mono', monospace" }}>
+                                <span style={{ fontSize: "0.84rem", fontFamily: "'DM Mono', monospace" }} className={`${Colors.text.primary} opacity-70`}>
                                     {it.email}
                                 </span>
 
@@ -321,7 +322,7 @@ export default function InterviewersTable() {
                                         className="iv-btn iv-btn-ghost"
                                         title="View"
                                     >
-                                        <Eye size={14} />
+                                        <Eye size={22} className="hover:text-gray-400 transition-colors duration-100 active:scale-90 cursor-pointer" />
                                     </button>
 
                                     <button
@@ -333,7 +334,7 @@ export default function InterviewersTable() {
                                         {deletingId === it.id ? (
                                             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.7rem" }}>…</span>
                                         ) : (
-                                            <Trash2 size={14} />
+                                            <Trash2 size={22} className="hover:text-red-700 transition-colors duration-100 active:scale-90 cursor-pointer" />
                                         )}
                                     </button>
                                 </div>
@@ -348,10 +349,10 @@ export default function InterviewersTable() {
                         {/* close btn */}
                         <button
                             onClick={() => setSelectedInterviewer(null)}
-                            style={{ position: "absolute", top: 18, right: 18, color: "#ffffff40" }}
-                            className="hover:text-white transition-colors"
+                            style={{ position: "absolute", top: 18, right: 18 }}
+                            className={`transition-colors ${Colors.text.primary} opacity-40 hover:opacity-100`}
                         >
-                            <X size={16} />
+                            <X size={22} className="hover:text-red-700 transition-colors duration-100 active:scale-90 cursor-pointer" />
                         </button>
 
                         <div className="flex items-center gap-4 mb-6">
@@ -362,16 +363,17 @@ export default function InterviewersTable() {
                                     border: "1px solid #64e5af55",
                                     borderRadius: "14px",
                                     display: "flex", alignItems: "center", justifyContent: "center",
-                                    color: "#64e5af",
-                                    fontFamily: "'DM Mono', monospace",
                                     fontSize: "1rem", fontWeight: 700,
                                 }}
+                                className={`font-mono ${Colors.text.special}`}
                             >
                                 {selectedInterviewer.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
                             </div>
                             <div>
-                                <p style={{ fontWeight: 700, fontSize: "1rem" }}>{selectedInterviewer.name}</p>
-                                <p style={{ color: "#64e5af80", fontSize: "0.75rem", fontFamily: "'DM Mono', monospace" }}>
+                                <p style={{ fontWeight: 700, fontSize: "1rem" }} className={`font-mono ${Colors.text.primary}`}>
+                                    {selectedInterviewer.name}
+                                </p>
+                                <p style={{ fontSize: "0.75rem"}} className={`${Colors.text.special} opacity-80 font-mono`}>
                                     @{selectedInterviewer.username}
                                 </p>
                             </div>
@@ -380,19 +382,22 @@ export default function InterviewersTable() {
                         <div className="space-y-3 mb-6">
                             <Field
                                 icon={User}
-                                placeholder="Name"
+                                label="Full Name"
+                                placeholder="e.g. Alex Johnson"
                                 value={editData.name}
                                 onChange={(v) => setEditData({ ...editData, name: v })}
                             />
                             <Field
-                                icon={AtSign}
-                                placeholder="Username"
+                                icon={IdCard}
+                                label="Username"
+                                placeholder="e.g. alex_j"
                                 value={editData.username}
                                 onChange={(v) => setEditData({ ...editData, username: v })}
                             />
                             <Field
                                 icon={Mail}
-                                placeholder="Email"
+                                label="Email Address"
+                                placeholder="e.g. alex@company.com"
                                 value={editData.email}
                                 onChange={(v) => setEditData({ ...editData, email: v })}
                             />
@@ -401,12 +406,11 @@ export default function InterviewersTable() {
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setSelectedInterviewer(null)}
-                                className="iv-btn iv-btn-ghost"
-                                style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #ffffff15" }}
+                                className={` ${Colors.text.primary} ${Colors.properties.interactiveButton} ${Colors.border.defaultThin} font-semibold flex items-center gap-2 px-2 py-2 rounded-lg font-mono`}
                             >
                                 Cancel
                             </button>
-                            <button onClick={() => editInterviewer(editData)} className="iv-btn-primary bg-[#64e5af] text-[#121313] px-4 py-2 rounded-lg">
+                            <button onClick={() => editInterviewer(editData)} className={` ${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} font-semibold flex items-center gap-2 px-2 py-2 rounded-lg font-mono`}>
                                 Save Changes
                             </button>
                         </div>
@@ -418,26 +422,26 @@ export default function InterviewersTable() {
                     <Modal onClose={() => setShowAddModal(false)}>
                         <button
                             onClick={() => setShowAddModal(false)}
-                            style={{ position: "absolute", top: 18, right: 18, color: "#ffffff40" }}
-                            className="hover:text-white transition-colors"
+                            style={{ position: "absolute", top: 18, right: 18 }}
+                            className={`transition-colors ${Colors.text.primary} opacity-40 hover:opacity-100`}
                         >
-                            <X size={16} />
+                            <X size={22} className="hover:text-red-700 transition-colors duration-100 active:scale-90 cursor-pointer" />
                         </button>
 
-                        <div className="mb-6">
+                        <div className="mb-6 font-mono">
                             <div
                                 style={{
                                     display: "inline-flex", alignItems: "center", gap: 8,
-                                    background: "#64e5af12", border: "1px solid #64e5af30",
                                     borderRadius: "10px", padding: "6px 12px",
-                                    color: "#64e5af", fontFamily: "'DM Mono', monospace", fontSize: "0.72rem",
+                                    fontSize: "0.72rem",
                                     marginBottom: "10px",
                                 }}
+                                className={`${Colors.background.special} ${Colors.border.defaultThin} ${Colors.text.inverted}`}
                             >
-                                <Plus size={11} /> new interviewer
+                                <Plus size={11} /> New Interviewer
                             </div>
                             <h2 style={{ fontWeight: 700, fontSize: "1.15rem" }}>Add Interviewer</h2>
-                            <p style={{ color: "#ffffff50", fontSize: "0.82rem", marginTop: 3 }}>
+                            <p style={{ fontSize: "0.82rem", marginTop: 3 }} className={`${Colors.text.primary} opacity-50`}>
                                 They'll receive an invite to join your workspace.
                             </p>
                         </div>
@@ -445,19 +449,22 @@ export default function InterviewersTable() {
                         <div className="space-y-3 mb-6">
                             <Field
                                 icon={User}
-                                placeholder="Name"
+                                label="Full Name"
+                                placeholder="e.g. Alex Johnson"
                                 value={addForm.name}
                                 onChange={(v) => setAddForm({ ...addForm, name: v })}
                             />
                             <Field
                                 icon={Mail}
-                                placeholder="email"
+                                label="Email Address"
+                                placeholder="e.g. alex@company.com"
                                 value={addForm.email}
                                 onChange={(v) => setAddForm({ ...addForm, email: v })}
                             />
                             <Field
-                                icon={AtSign}
-                                placeholder="Username"
+                                icon={IdCard}
+                                label="Username"
+                                placeholder="e.g. alex_j"
                                 value={addForm.username}
                                 onChange={(v) => setAddForm({ ...addForm, username: v })}
                             />
@@ -467,8 +474,8 @@ export default function InterviewersTable() {
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowAddModal(false)}
-                                className="iv-btn iv-btn-ghost"
-                                style={{ padding: "8px 16px", borderRadius: "10px", border: "1px solid #ffffff15" }}
+                                className={`iv-btn iv-btn-ghost ${Colors.properties.interactiveButton} ${Colors.text.primary} font-semibold font-mono`}
+                                style={{ padding: "8px 16px", borderRadius: "10px" }}
                             >
                                 Cancel
                             </button>
@@ -478,7 +485,7 @@ export default function InterviewersTable() {
                                     setShowAddModal(false);
                                     setAddForm({ name: "", username: "", email: "" });
                                 }}
-                                className="iv-btn-primary bg-[#64e5af] text-[#121313] px-4 py-2 rounded-lg"
+                                className={`iv-btn-primary ${Colors.background.special} ${Colors.text.inverted} px-4 py-2 rounded-lg ${Colors.properties.interactiveButton} font-semibold font-mono`}
                             >
                                 Send Invite
                             </button>

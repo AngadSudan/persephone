@@ -65,4 +65,6 @@ organizationRouter.get(
   organizationController.listMyInterviewers,
 );
 
+organizationRouter.get("/get-interviewers-count", authMiddleware, organizationController.getInterviewersCount);
+
 export default organizationRouter;
