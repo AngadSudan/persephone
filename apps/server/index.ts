@@ -25,6 +25,7 @@ import wishlistController from "./controller/wishlist.controller";
 import wishlistEntryRouter from "./routes/wishlist-entry.routes";
 import jobListingRouter from "./routes/job-listing.route";
 import recommendationRouter from "./routes/recommendation.route";
+import resumeRouter from "./routes/resume.route";
 
 import passport from "passport";
 import session from "express-session";
@@ -131,6 +132,7 @@ app.use("/api/v1/interviewer/wishlistEntry", wishlistEntryRouter);
 app.use("/api/v1/jobListing", jobListingRouter);
 app.use("/api/v1/notification", notificationRouter);
 app.use("/api/v1/recommendations",recommendationRouter);
+app.use("/api/v1/resume",resumeRouter);
 
 const errorHandler = (
   error: any,

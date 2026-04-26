@@ -217,3 +217,65 @@ export interface updateWishlistEntry {
   wishlistId?: string,
   candidateId?: string,
 }
+
+//Resume Types
+export interface ParsedEducation {
+  degree: string;
+  institution: string;
+  fieldOfStudy?: string;
+  startYear?: string;
+  endYear?: string;
+  grade?: string;
+  description?: string;
+  isOngoing?: boolean;
+}
+
+export interface ParsedExperience {
+  companyName: string;
+  jobTitle: string;
+  startDate: string;    // ISO string or partial like "2022-06"
+  endDate?: string;     // empty string means ongoing
+  description: string;
+  jobType?: 'REMOTE' | 'OFFLINE' | 'HYBRID' | 'FREELANCE';
+}
+
+export interface ParsedProject {
+  title: string;
+  description: string;
+  techStack: string[];
+  projectUrl?: string;
+  repositoryUrl?: string;
+}
+
+export interface ParsedSkillGroup {
+  category: string;     // e.g. "Backend", "DevOps"
+  items: string[];
+}
+
+// Root structure returned by Gemini and validated before mapping
+export interface ParsedResume {
+  name: string;
+  email: string;
+  phone?: string;
+  headline?: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
+  githubUrl?: string;
+  education: ParsedEducation[];
+  experience: ParsedExperience[];
+  projects: ParsedProject[];
+  skills: ParsedSkillGroup[];
+}
+
+// What the API endpoint returns to the caller
+export interface ResumeParseResult {
+  success: boolean;
+  userId: string;
+  parsed: ParsedResume;
+  saved: {
+    experiencesCreated: number;
+    projectsCreated: number;
+    userUpdated: boolean;
+  };
+  warnings: string[];   // non-fatal issues (e.g. "endDate was invalid, set to null")
+}

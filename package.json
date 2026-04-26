@@ -9,6 +9,7 @@
     "check-types": "turbo run check-types"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "prettier": "^3.7.4",
     "turbo": "^2.8.3",
     "typescript": "5.9.2"
@@ -27,8 +28,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.575.0",
+    "mammoth": "^1.12.0",
     "motion": "^12.34.3",
     "motion-react": "^0.15.0-alpha.1",
+    "pdf-parse": "^2.4.5",
     "react-hook-form": "^7.71.1",
     "react-hot-toast": "^2.6.0",
     "shadcn": "^3.8.5",
