@@ -27,6 +27,8 @@
     "@lottiefiles/dotlottie-react": "^0.18.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "code-x": ".",
+    "js-yaml": "^4.1.1",
     "lucide-react": "^0.575.0",
     "mammoth": "^1.12.0",
     "motion": "^12.34.3",

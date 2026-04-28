@@ -6,7 +6,7 @@ import Link from "next/link";
 import UpdateProjectModal from "./UpdateProjectModal";
 import DeleteProjectModal from "./DeleteProjectModal";
 import type { Project } from "@/../server/utils/type";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, ImagePlus } from "lucide-react";
 import Spinner from "@/components/General/Spinner";
 import { useRouter } from "next/navigation";
 
@@ -123,7 +123,18 @@ export default function Project({ id }: { id: string }) {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm opacity-80">No project snapshots available.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(true)}
+                  className={`group mx-auto flex w-full max-w-md flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-8 text-center transition-colors ${Colors.border.defaultThin} ${Colors.properties.interactiveButton}`}
+                  aria-label="Add project snapshots"
+                >
+                  <div className={`rounded-full p-4 ${Colors.background.primary}`}>
+                    <ImagePlus size={36} className="opacity-80 transition-opacity group-hover:opacity-100" />
+                  </div>
+                  <p className="text-base font-semibold">Add project snapshots</p>
+                  <p className="text-sm opacity-80">Click to open the edit project modal and upload media.</p>
+                </button>
               )}
             </div>
         </div>

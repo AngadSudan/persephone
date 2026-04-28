@@ -3,6 +3,9 @@ import apiResponse from "../utils/apiResponse";
 import cloudinaryService from "../service/Cloudinary.service";
 import prismaClient from "../utils/prisma";
 import type { updateOrganization, updateInterviewer, createInterviewer } from "../utils/type";
+import { generatePassword } from "../utils/nodemailer/GeneratePass";
+import { handleSendMail } from "../utils/nodemailer/mailHandler";
+import { hashPassword } from "../utils/password";
 import {
   getCacheSafe,
   invalidateManyCacheKeysSafe,
@@ -141,24 +144,35 @@ class OrganizationController {
         typeof data.username === "string" ? data.username.trim() : "";
       const email =
         typeof data.email === "string" ? data.email.trim() : "";
-      const password =
-        typeof data.password === "string" ? data.password.trim() : "";
 
-      if (!name || !username || !email || !password) {
-        throw new Error("All fields are required and cannot be empty");
+      if (!name || !username || !email) {
+        throw new Error("Name, username, and email are required and cannot be empty");
       }
+
+      const existingInterviewer = await prismaClient.interviewer.findUnique({
+        where: { email },
+      });
+
+      if (existingInterviewer) {
+        throw new Error("Interviewer with this mail already exists");
+      }
+
+      const generatedPassword = generatePassword();
+      const hashedPassword = await hashPassword(generatedPassword);
 
       const newInterviewer = await prismaClient.interviewer.create({
         data: {
           name,
           username,
           email,
-          password,
+          password: hashedPassword,
           orgId: userId,
         },
       });
 
       if (!newInterviewer) throw new Error("Unable to create interviewer");
+
+      await handleSendMail(email, generatedPassword);
 
       await invalidateOrganizationCaches(userId);
 
