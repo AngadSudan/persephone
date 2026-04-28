@@ -10,28 +10,37 @@ export default function InterviewerList() {
     const router = useRouter();
     const [totalInterviewers, setTotalInterviewers] = useState<number | null>(null);
 
+    async function fetchInterviewersCount() {
+        try {
+            const res = await axiosInstance.get("/api/v1/organizations/get-interviewers-count");
+            console.log('res', res)
+            setTotalInterviewers(res.data?.data?.totalInterviewers ?? 0);
+        } catch (error) {
+            console.error("Failed to fetch interviewers count", error);
+            setTotalInterviewers(0);
+        }
+    }
+
     useEffect(() => {
         let mounted = true;
 
-        async function fetchInterviewersCount() {
-            try {
-                const res = await axiosInstance.get("/api/v1/organizations/get-interviewers-count");
-                console.log('res', res)
-                if (mounted) {
-                    setTotalInterviewers(res.data?.data?.totalInterviewers ?? 0);
-                }
-            } catch (error) {
-                console.error("Failed to fetch interviewers count", error);
-                if (mounted) {
-                    setTotalInterviewers(0);
-                }
+        const refreshCount = async () => {
+            if (mounted) {
+                await fetchInterviewersCount();
             }
-        }
+        };
 
-        fetchInterviewersCount();
+        refreshCount();
+
+        const handleInterviewersChanged = () => {
+            void refreshCount();
+        };
+
+        window.addEventListener("organization-interviewers-changed", handleInterviewersChanged);
 
         return () => {
             mounted = false;
+            window.removeEventListener("organization-interviewers-changed", handleInterviewersChanged);
         };
     }, []);
 

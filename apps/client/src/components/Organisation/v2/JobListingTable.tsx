@@ -261,10 +261,10 @@ export default function JobListingsTable() {
 
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className={` ${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} cursor-pointer font-semibold flex items-center gap-2 px-2 py-2 rounded-lg transition-all hover:opacity-90 active:scale-[0.98]`}
+                    className={` ${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} cursor-pointer font-semibold flex items-center gap-2 px-2 text-sm py-2 rounded-lg transition-all hover:opacity-90 active:scale-[0.98]`}
                 >
                     <Plus size={15} />
-                    Add Job Listing
+                    Add Listing
                 </button>
             </div>
 

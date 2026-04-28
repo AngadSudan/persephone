@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import axios from "axios";
-import Spinner from "@/components/General/Spinner";
+import { useEffect, useState } from "react";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import { Trash2, Eye, Plus, Search, X, User, Mail, ChevronRight, ChevronLeft, IdCard } from "lucide-react";
 import toast from "react-hot-toast";
@@ -28,13 +26,15 @@ function Pill({ children }: { children: React.ReactNode }) {
     );
 }
 async function handleCreateInterviewer(data: { name: string; username: string; email: string }) {
-    try {
-        await axiosInstance.post(`/api/v1/organizations/create-interviewer`, data, { withCredentials: true });
-        toast.success("Interviewer created successfully");
-    } catch (err) {
-        console.error("Failed to create interviewer", err);
-        toast.error("Failed to create interviewer");
-    }
+    return axiosInstance.post(`/api/v1/organizations/create-interviewer`, data, { withCredentials: true });
+}
+
+function InlineSpinner() {
+    return <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />;
+}
+
+function emitInterviewersChanged() {
+    window.dispatchEvent(new Event("organization-interviewers-changed"));
 }
 /* ── modal wrapper ── */
 function Modal({
@@ -56,7 +56,7 @@ function Modal({
                     boxShadow: "0 0 60px #64e5af15, 0 24px 48px rgba(0,0,0,0.6)",
                     animation: "modalIn 0.2s cubic-bezier(.22,1,.36,1)",
                 }}
-                className={`w-[440px] rounded-2xl p-7 relative ${Colors.background.secondary} ${Colors.text.primary}`}
+                className={`w-110 rounded-2xl p-7 relative ${Colors.background.secondary} ${Colors.text.primary}`}
             >
                 {children}
             </div>
@@ -114,7 +114,6 @@ function Field({
 
 export default function InterviewersTable() {
     const Colors = useColors();
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
     const router = useRouter();
 
     const [interviewers, setInterviewers] = useState<Interviewer[]>([]);
@@ -124,6 +123,8 @@ export default function InterviewersTable() {
     const [editData, setEditData] = useState<Interviewer | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [addForm, setAddForm] = useState({ name: "", username: "", email: "" });
+    const [creating, setCreating] = useState(false);
+    const [savingId, setSavingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     
     async function fetchInterviewers() {
@@ -148,8 +149,9 @@ export default function InterviewersTable() {
             await axiosInstance.delete(`/api/v1/organizations/interviewers/${id}`, {
                 withCredentials: true,
             });
-            setInterviewers((prev) => prev.filter((i) => i.id !== id));
             toast.success("Interviewer deleted");
+            await fetchInterviewers();
+            emitInterviewersChanged();
         } catch (err) {
             toast.error("Failed to delete interviewer");
             console.error("Delete failed", err);
@@ -159,16 +161,23 @@ export default function InterviewersTable() {
     }
 
     async function editInterviewer(data: Interviewer) {
+        setSavingId(data.id);
         try {
-            await axios.put(
-                `${backendUrl}/api/v1/organizations/interviewers/${data.id}`,
+            await axiosInstance.put(
+                `/api/v1/organizations/interviewers/${data.id}`,
                 data,
                 { withCredentials: true }
             );
-            fetchInterviewers();
+            toast.success("Interviewer updated");
+            await fetchInterviewers();
+            emitInterviewersChanged();
             setSelectedInterviewer(null);
+            setEditData(null);
         } catch (err) {
             console.error("Edit failed", err);
+            toast.error("Failed to update interviewer");
+        } finally {
+            setSavingId(null);
         }
     }
 
@@ -214,7 +223,7 @@ export default function InterviewersTable() {
                     }
                     }><ChevronLeft /></button>
 
-                    <div className={`${Colors.background.primary} ${Colors.text.primary} rounded-md flex items-center gap-[10px] px-[14px] py-[9px] w-[80%] transition-colors duration-200`}>
+                    <div className={`${Colors.background.primary} ${Colors.text.primary} rounded-md flex items-center gap-2.5 px-3.5 py-2.25 w-[80%] transition-colors duration-200`}>
                         <Search className={`${Colors.text.special}`} size={14} style={{ opacity: 0.6, flexShrink: 0 }} />
                         <input
                             placeholder="Search interviewers…"
@@ -240,7 +249,7 @@ export default function InterviewersTable() {
 
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className={` ${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} font-semibold flex items-center gap-2 px-2 py-2 rounded-lg font-mono`}
+                        className={` ${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} font-semibold flex items-center gap-2 px-1 text-sm py-2 rounded-lg font-mono`}
                     >
                         <Plus size={15} />
                         Add Interviewer
@@ -318,7 +327,7 @@ export default function InterviewersTable() {
                                 {/* actions */}
                                 <div className="flex items-center justify-end gap-1">
                                     <button
-                                        onClick={() => { setSelectedInterviewer(it); setEditData({ ...it }); }}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedInterviewer(it); setEditData({ ...it }); }}
                                         className="iv-btn iv-btn-ghost"
                                         title="View"
                                     >
@@ -326,13 +335,13 @@ export default function InterviewersTable() {
                                     </button>
 
                                     <button
-                                        onClick={() => deleteInterviewer(it.id)}
+                                        onClick={(e) => { e.stopPropagation(); deleteInterviewer(it.id); }}
                                         disabled={deletingId === it.id}
                                         className="iv-btn iv-btn-danger"
                                         title="Delete"
                                     >
                                         {deletingId === it.id ? (
-                                            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.7rem" }}>…</span>
+                                            <InlineSpinner />
                                         ) : (
                                             <Trash2 size={22} className="hover:text-red-700 transition-colors duration-100 active:scale-90 cursor-pointer" />
                                         )}
@@ -410,8 +419,13 @@ export default function InterviewersTable() {
                             >
                                 Cancel
                             </button>
-                            <button onClick={() => editInterviewer(editData)} className={` ${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} font-semibold flex items-center gap-2 px-2 py-2 rounded-lg font-mono`}>
-                                Save Changes
+                            <button
+                                disabled={savingId === editData.id}
+                                onClick={() => editInterviewer(editData)}
+                                className={` ${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} font-semibold flex items-center gap-2 px-2 py-2 rounded-lg font-mono disabled:opacity-70`}
+                            >
+                                {savingId === editData.id ? <InlineSpinner /> : null}
+                                {savingId === editData.id ? "Saving..." : "Save Changes"}
                             </button>
                         </div>
                     </Modal>
@@ -480,14 +494,27 @@ export default function InterviewersTable() {
                                 Cancel
                             </button>
                             <button
-                                onClick={() => {
-                                    handleCreateInterviewer(addForm);
-                                    setShowAddModal(false);
-                                    setAddForm({ name: "", username: "", email: "" });
+                                disabled={creating}
+                                onClick={async () => {
+                                    setCreating(true);
+                                    try {
+                                        await handleCreateInterviewer(addForm);
+                                        toast.success("Interviewer created successfully");
+                                        setShowAddModal(false);
+                                        setAddForm({ name: "", username: "", email: "" });
+                                        await fetchInterviewers();
+                                        emitInterviewersChanged();
+                                    } catch (err) {
+                                        console.error("Failed to create interviewer", err);
+                                        toast.error("Failed to create interviewer");
+                                    } finally {
+                                        setCreating(false);
+                                    }
                                 }}
-                                className={`iv-btn-primary ${Colors.background.special} ${Colors.text.inverted} px-4 py-2 rounded-lg ${Colors.properties.interactiveButton} font-semibold font-mono`}
+                                className={`iv-btn-primary ${Colors.background.special} ${Colors.text.inverted} px-4 py-2 rounded-lg ${Colors.properties.interactiveButton} font-semibold font-mono disabled:opacity-70`}
                             >
-                                Send Invite
+                                {creating ? <InlineSpinner /> : null}
+                                {creating ? "Sending..." : "Send Invite"}
                             </button>
                         </div>
                     </Modal>

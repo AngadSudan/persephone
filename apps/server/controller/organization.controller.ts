@@ -24,12 +24,14 @@ const invalidateOrganizationCaches = async (orgId: string): Promise<void> => {
   ]);
 };
 
+const getAuthUser = (req: Request) => req.user as { id?: string; type?: string } | undefined;
+
 class OrganizationController {
   async OrgProfilePicUpdate(req: Request, res: Response) {
     try {
       const file = req.file;
       if (!file) throw new Error("No file found");
-      const userId = req.user?.id;
+      const userId = getAuthUser(req)?.id;
       if (!userId) throw new Error("UserId is required");
 
       const uniqueFileName = `${file.originalname}-Profile-Picture-${Date.now()}`;
@@ -62,7 +64,7 @@ class OrganizationController {
     try {
       const file = req.file;
       if (!file) throw new Error("No file found");
-      const userId = req.user?.id;
+      const userId = getAuthUser(req)?.id;
 
       if (!userId) throw new Error("User id not found");
 
@@ -93,7 +95,7 @@ class OrganizationController {
   async updateOrganizationInfo(req: Request, res: Response) {
     try {
       const data = req.body as updateOrganization;
-      const userId = req.user?.id;
+      const userId = getAuthUser(req)?.id;
       if (!userId) throw new Error("UserId is required");
 
       const name =
@@ -134,7 +136,7 @@ class OrganizationController {
   async addInterviewer(req: Request, res: Response) {
     try {
       const data = req.body as createInterviewer;
-      const userId = req.user?.id;
+      const userId = getAuthUser(req)?.id;
 
       if (!userId) throw new Error("UserId is required");
 
@@ -188,10 +190,88 @@ class OrganizationController {
   }
   async updateInterviewerDetail(req: Request, res: Response) {
     try {
-      const data = req.body as updateInterviewer;
-      const userId = req.user?.id;
+      const authUser = getAuthUser(req);
+      const userId = authUser?.id;
 
       if (!userId) throw new Error("UserId is required");
+
+      const interviewerId = typeof req.params.id === "string" ? req.params.id.trim() : "";
+
+      if (interviewerId) {
+        if (authUser?.type !== "ORGANIZATION") {
+          return res
+            .status(403)
+            .json(apiResponse(403, "Only organizations can edit interviewers", null));
+        }
+
+        const data = req.body as {
+          name?: string;
+          username?: string;
+          email?: string;
+        };
+
+        const name = typeof data.name === "string" ? data.name.trim() : "";
+        const username = typeof data.username === "string" ? data.username.trim() : "";
+        const email = typeof data.email === "string" ? data.email.trim() : "";
+
+        if (!name && !username && !email) {
+          throw new Error("At least one non-empty field is required");
+        }
+
+        const dbInterviewer = await prismaClient.interviewer.findFirst({
+          where: {
+            id: interviewerId,
+            orgId: userId,
+          },
+        });
+
+        if (!dbInterviewer) throw new Error("Interviewer not found");
+
+        if (username) {
+          const existingUsername = await prismaClient.interviewer.findFirst({
+            where: {
+              username,
+              NOT: { id: interviewerId },
+            },
+          });
+
+          if (existingUsername) {
+            throw new Error("Interviewer with this username already exists");
+          }
+        }
+
+        if (email) {
+          const existingEmail = await prismaClient.interviewer.findFirst({
+            where: {
+              email,
+              NOT: { id: interviewerId },
+            },
+          });
+
+          if (existingEmail) {
+            throw new Error("Interviewer with this email already exists");
+          }
+        }
+
+        const updatedInterviewer = await prismaClient.interviewer.update({
+          where: {
+            id: dbInterviewer.id,
+          },
+          data: {
+            name: name || dbInterviewer.name,
+            username: username || dbInterviewer.username,
+            email: email || dbInterviewer.email,
+          },
+        });
+
+        await invalidateOrganizationCaches(userId);
+
+        return res.status(200).json(
+          apiResponse(200, "Updated Interviewer", updatedInterviewer)
+        );
+      }
+
+      const data = req.body as updateInterviewer;
 
       const name =
         typeof data.name === "string" ? data.name.trim() : undefined;
@@ -241,12 +321,39 @@ class OrganizationController {
   }
   async removeInterviewer(req: Request, res: Response) {
     try {
-      const userId = req.user?.id;
+      const authUser = getAuthUser(req);
+      const userId = authUser?.id;
       if (!userId) throw new Error("userId is required");
+
+      const interviewerId =
+        typeof req.params.id === "string" && req.params.id.trim()
+          ? req.params.id.trim()
+          : typeof req.body?.id === "string" && req.body.id.trim()
+            ? req.body.id.trim()
+            : "";
+
+      if (!interviewerId) {
+        throw new Error("Interviewer id is required");
+      }
+
+      if (authUser?.type !== "ORGANIZATION") {
+        return res
+          .status(403)
+          .json(apiResponse(403, "Only organizations can delete interviewers", null));
+      }
+
+      const dbInterviewer = await prismaClient.interviewer.findFirst({
+        where: {
+          id: interviewerId,
+          orgId: userId,
+        },
+      });
+
+      if (!dbInterviewer) throw new Error("Interviewer not found");
 
       const deletedInterviewer = await prismaClient.interviewer.delete({
         where: {
-          id: userId,
+          id: dbInterviewer.id,
         }
       });
       if (!deletedInterviewer) throw new Error("Unable to delete");
@@ -264,7 +371,7 @@ class OrganizationController {
   async InterviewerProfilePicUpdate(req: Request, res: Response) {
     try {
       const file = req.file;
-      const userId = req.user?.id;
+      const userId = getAuthUser(req)?.id;
       if (!userId) throw new Error("userId is required");
 
       const uniqueFileName = `${file?.originalname}-Profile-Picture-${Date.now()}`;
@@ -295,7 +402,7 @@ class OrganizationController {
   async InterviewerProfileBannerUpdate(req: Request, res: Response) {
     try {
       const file = req.file;
-      const userId = req.user?.id;
+      const userId = getAuthUser(req)?.id;
       if (!userId) throw new Error("userId is required");
 
       const uniqueFileName = `${file?.originalname}-Banner-${Date.now()}`;
@@ -326,13 +433,15 @@ class OrganizationController {
 
   async getMyOrganization(req: Request, res: Response) {
     try {
-      if (req.user?.type !== "ORGANIZATION") {
+      const authUser = getAuthUser(req);
+
+      if (authUser?.type !== "ORGANIZATION") {
         return res
           .status(403)
           .json(apiResponse(403, "Only organizations can access this", null));
       }
 
-      const orgId = req.user?.id;
+      const orgId = authUser?.id;
       if (!orgId) throw new Error("Organization id not found");
 
       const orgProfileCacheKey = getOrganizationProfileCacheKey(orgId);
@@ -370,16 +479,17 @@ class OrganizationController {
 
   async listMyInterviewers(req: Request, res: Response) {
     try {
-      console.log(req.user?.type);
-      console.log(req.user?.id);
+      const authUser = getAuthUser(req);
+      console.log(authUser?.type);
+      console.log(authUser?.id);
       // @ts-ignore
-      if (req.user?.type !== "ORGANIZATION") {
+      if (authUser?.type !== "ORGANIZATION") {
         return res
           .status(200)
           .json(apiResponse(403, "Only organizations can access this", null));
       }
 
-      const orgId = req.user?.id;
+      const orgId = authUser?.id;
       if (!orgId) throw new Error("Organization id not found");
 
       const interviewersCacheKey = getOrganizationInterviewersCacheKey(orgId);
@@ -416,7 +526,7 @@ class OrganizationController {
 
   async getInterviewersCount(req: Request, res: Response) {
     try {
-      const authUser = req.user as { id?: string; type?: string } | undefined;
+      const authUser = getAuthUser(req);
 
       if (authUser?.type !== "ORGANIZATION") {
         return res
