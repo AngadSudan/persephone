@@ -31,6 +31,18 @@ organizationRouter.post(
 );
 
 organizationRouter.put(
+    "/interviewers/:id",
+    authMiddleware,
+    organizationController.updateInterviewerDetail,
+);
+
+organizationRouter.delete(
+    "/interviewers/:id",
+    authMiddleware,
+    organizationController.removeInterviewer,
+);
+
+organizationRouter.put(
     "/update-interviewer",
     authMiddleware,
     organizationController.updateInterviewerDetail,
