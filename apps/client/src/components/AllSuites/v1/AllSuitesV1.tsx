@@ -114,7 +114,9 @@ function AllSuitesV1() {
   console.log(filteredData);
   return (
     <div className={`h-screen flex gap-4 ${themes.background.secondary}`}>
-      <Sidebar />
+      <div className="w-72 h-screen">
+        <Sidebar />
+      </div>
       <div className="w-full">
         <Filter filters={filters} setFilters={setFilters} />
         <DisplaySuites suites={filteredData} />

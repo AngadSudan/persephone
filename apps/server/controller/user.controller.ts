@@ -290,11 +290,11 @@ class UserController {
         ? rawIdentifier[0]
         : rawIdentifier;
       const freshQuery = req.query.fresh;
-      const shouldBypassCache =
-        freshQuery === "1" || freshQuery === "true";
+      const shouldBypassCache = freshQuery === "1" || freshQuery === "true";
       if (!userIdentifier) throw new Error("User id is required");
 
-      const publicProfileCacheKey = getPublicUserProfileCacheKey(userIdentifier);
+      const publicProfileCacheKey =
+        getPublicUserProfileCacheKey(userIdentifier);
       if (!shouldBypassCache) {
         const cachedUserData = await getCacheSafe(publicProfileCacheKey);
 
@@ -307,10 +307,7 @@ class UserController {
 
       const userData = await prismaClient.user.findFirst({
         where: {
-          OR: [
-            { username: userIdentifier },
-            { id: userIdentifier },
-          ],
+          OR: [{ username: userIdentifier }],
         },
         select: {
           id: true,
@@ -840,7 +837,9 @@ class UserController {
       }>(userGraphCacheKey);
 
       if (cachedGraph !== null) {
-        return res.status(200).json(apiResponse(200, "graph fetched (Cache)", cachedGraph));
+        return res
+          .status(200)
+          .json(apiResponse(200, "graph fetched (Cache)", cachedGraph));
       }
 
       const dbGraph = await prismaClient.developerGraph.findFirst({
@@ -875,9 +874,9 @@ class UserController {
 
       await setCacheSafe(userGraphCacheKey, graphPayload);
 
-      return res.status(200).json(
-        apiResponse(200, "graph fetched", graphPayload),
-      );
+      return res
+        .status(200)
+        .json(apiResponse(200, "graph fetched", graphPayload));
     } catch (error: any) {
       console.log(error);
       return res.status(200).json(
@@ -889,24 +888,20 @@ class UserController {
     }
   }
 
-  async makeFriends(req: Request, res: Response){
+  async makeFriends(req: Request, res: Response) {
     try {
       const userId1 = req.user?.id;
       const { friendId: userId2 } = req.body;
 
-      if(userId1 === userId2) throw new Error("Cannot add yourself as friend");
-      if(!userId1 || !userId2) throw new Error("User ID's are missing");
+      if (userId1 === userId2) throw new Error("Cannot add yourself as friend");
+      if (!userId1 || !userId2) throw new Error("User ID's are missing");
 
       const result = await graphService.addFriends(userId1, userId2);
 
-      return res.status(200).json(
-        apiResponse(200,"Friends added", result)
-      );
+      return res.status(200).json(apiResponse(200, "Friends added", result));
     } catch (error: any) {
       console.log(error);
-      return res.status(200).json(
-        apiResponse(200,error.message,error)
-      );
+      return res.status(200).json(apiResponse(200, error.message, error));
     }
   }
 }

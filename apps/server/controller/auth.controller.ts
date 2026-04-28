@@ -209,6 +209,7 @@ class AuthController {
         .status(200)
         .json(apiResponse(200, "User Created Successfully", createdUser));
     } catch (error: any) {
+      console.log(error);
       return res.status(200).json(apiResponse(500, error.message, null));
     }
   }

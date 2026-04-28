@@ -104,7 +104,7 @@ model User {
   password        String?
   resume          String?          @default("")
   userInfo        String?
-  githubId        String?          @unique
+  githubId        String?
   githubUsername  String?
   githubAvatar    String?
   githubToken     String?

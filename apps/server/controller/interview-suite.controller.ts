@@ -72,7 +72,9 @@ class InterviewSuiteController {
 
       if (!createdSuite) throw new Error("error creating interview suite");
 
-      await invalidateCacheSafe(getCompanyInterviewSuitesCacheKey(dbUser.orgId));
+      await invalidateCacheSafe(
+        getCompanyInterviewSuitesCacheKey(dbUser.orgId),
+      );
 
       return res
         .status(200)
@@ -329,7 +331,9 @@ class InterviewSuiteController {
       if (cachedInterviewSuite !== null) {
         return res
           .status(200)
-          .json(apiResponse(200, "interview suite fetched", cachedInterviewSuite));
+          .json(
+            apiResponse(200, "interview suite fetched", cachedInterviewSuite),
+          );
       }
       // TODO: add a check for interviewer vs organization
       const dbInterviewSuite = await prismaClient.interviewSuite.findMany({
@@ -697,13 +701,16 @@ class InterviewSuiteController {
       });
       if (!dbApplication) throw new Error("Job application not found");
 
-      const applicationCacheKey = getJobApplicationDetailCacheKey(applicationId);
+      const applicationCacheKey =
+        getJobApplicationDetailCacheKey(applicationId);
       const cachedApplication = await getCacheSafe(applicationCacheKey);
 
       if (cachedApplication !== null) {
         return res
           .status(200)
-          .json(apiResponse(200, "application Fetched (Cache)", cachedApplication));
+          .json(
+            apiResponse(200, "application Fetched (Cache)", cachedApplication),
+          );
       }
 
       const dbCandidate = await prismaClient.user.findUnique({
@@ -734,31 +741,34 @@ class InterviewSuiteController {
     try {
       const { url }: { url: InterviewTypes.UrlMapping } = req.body;
 
-      let leetcodeUrl: any = url.leetcodeUrl.split("/");
-      leetcodeUrl =
-        leetcodeUrl[leetcodeUrl.length - 1] ||
-        leetcodeUrl[leetcodeUrl.length - 2];
       let leetCodeObject;
+      let leetcodeUrl: any;
+
       if (leetcodeUrl) {
+        leetcodeUrl = url.leetcodeUrl.split("/");
+        leetcodeUrl =
+          leetcodeUrl[leetcodeUrl.length - 1] ||
+          leetcodeUrl[leetcodeUrl.length - 2];
         leetCodeObject =
           await externalPlatformService.getLeetCodeInfo(leetcodeUrl);
       }
 
-      let githubUrl: any = url.githubUrl.split("/");
-      githubUrl =
-        githubUrl[githubUrl.length - 1] || githubUrl[githubUrl.length - 2];
-
       let githubObject;
+      let githubUrl: any;
       if (githubUrl) {
+        let githubUrl: any = url.githubUrl.split("/");
+        githubUrl =
+          githubUrl[githubUrl.length - 1] || githubUrl[githubUrl.length - 2];
         githubObject = await externalPlatformService.getGithubInfo(githubUrl);
       }
 
-      let codeforcesUrl: any = url.codeforcesUrl.split("/");
-      codeforcesUrl =
-        codeforcesUrl[codeforcesUrl.length - 1] ||
-        codeforcesUrl[codeforcesUrl.length - 2];
       let codeforcesObject;
+      let codeforcesUrl;
       if (codeforcesUrl) {
+        let codeforcesUrl: any = url.codeforcesUrl.split("/");
+        codeforcesUrl =
+          codeforcesUrl[codeforcesUrl.length - 1] ||
+          codeforcesUrl[codeforcesUrl.length - 2];
         codeforcesObject =
           await externalPlatformService.getCodeForcesInfo(codeforcesUrl);
       }
@@ -954,7 +964,8 @@ class InterviewSuiteController {
       }
 
       if (!dbUser) throw new Error("db user not found");
-      const selectedCandidatesCacheKey = getSelectedCandidatesCacheKey(jobListingId);
+      const selectedCandidatesCacheKey =
+        getSelectedCandidatesCacheKey(jobListingId);
       const cachedData = await getCacheSafe(selectedCandidatesCacheKey);
       if (cachedData !== null) {
         return res
@@ -1124,7 +1135,9 @@ class InterviewSuiteController {
           getRoundCandidatesPageZeroCacheKey(dbCurrentRound.id),
         );
         if (nextRound) {
-          await invalidateCacheSafe(getRoundCandidatesPageZeroCacheKey(nextRound));
+          await invalidateCacheSafe(
+            getRoundCandidatesPageZeroCacheKey(nextRound),
+          );
         }
         return res
           .status(200)
