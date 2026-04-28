@@ -6,9 +6,10 @@ import ProjectCard from "./ProjectCard";
 import Spinner from "@/components/General/Spinner";
 import AddProjectModal from "./AddProjectModal";
 import type { Project } from "@/../server/utils/type";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, FolderPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { WebsiteNavbar } from "@/components/General/WebsiteNavbar";
+import Sidebar from "@/components/General/Sidebar";
 
 const PAGE_SIZE = 6;
 
@@ -160,56 +161,75 @@ export default function ProjectsV1() {
 
   return (
     <div
-      className={`${Colors.text.primary} ${Colors.background.primary}
-      min-h-screen w-full flex flex-col items-center gap-8 py-16 font-mono tracking-tight`}
+      className={`${Colors.text.primary} ${Colors.background.primary} min-h-screen w-full overflow-hidden font-mono tracking-tight`}
     >
       <WebsiteNavbar />
-      <div
-        className={`${Colors.background.secondary}
-        w-4/5 mx-auto rounded-xl p-4 flex items-center justify-between`}
-      >
-        <div className="flex items-center gap-3">
-        <button className={`${Colors.text.primary} ${Colors.background.primary} ${Colors.properties.interactiveButton} p-2 rounded-md font-semibold`} onClick={() => router.push("/profile")}>
-          <ArrowLeftIcon size={26} />
-        </button>
-        <h1 className="text-2xl font-semibold">Projects</h1>
-        </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className={`${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} px-4 py-2 font-semibold rounded-lg`}
-        >
-          Add New Project
-        </button>
-      </div>
 
-      {projects.length === 0 && !loading ? (
-        <div className="flex flex-col items-center gap-4 mt-12">
-          <p className={`${Colors.text.secondary} text-lg`}>No projects to show.</p>
-        </div> 
-      ) : (
-        <div className="w-4/5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project: Project, index) => (
-          // Using project.id is best, but if duplicate IDs exist, combine with index
-          <ProjectCard key={`${project.id}-${index}`} project={project} />
-        ))}
-      </div>
-      )}
+      <div className="grid h-[calc(100vh)] min-h-0 w-full grid-cols-1 gap-4 p-4 lg:grid-cols-[18rem_minmax(0,1fr)] lg:p-6">
+        <aside className="min-h-0 h-full">
+          <Sidebar />
+        </aside>
 
-      {/* Sentinel & Loading Indicator */}
-      <div
-        ref={observerRef}
-        className="w-full flex justify-center py-8 min-h-10"
-      >
-        {loading && <Spinner />}
-        {/* {!hasMore && projects.length > 0 && (
-          <p className="opacity-50 text-sm">No more projects to show.</p>
-        )} */}
+        <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+          <div
+            className={`${Colors.background.secondary} flex items-center justify-between rounded-xl p-4`}
+          >
+            <div className="flex items-center gap-3">
+              <button
+                className={`${Colors.text.primary} ${Colors.background.primary} ${Colors.properties.interactiveButton} rounded-md p-2 font-semibold`}
+                onClick={() => router.back()}
+              >
+                <ArrowLeftIcon size={26} />
+              </button>
+              <h1 className="text-2xl font-semibold">Projects</h1>
+            </div>
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className={`${Colors.background.special} ${Colors.text.inverted} ${Colors.properties.interactiveButton} rounded-lg px-4 py-2 font-semibold`}
+            >
+              Add New Project
+            </button>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            {projects.length === 0 && !loading ? (
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className={`group mt-12 mx-auto flex w-full max-w-md flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-8 text-center transition-colors ${Colors.border.specialThick} ${Colors.properties.interactiveButton}`}
+                aria-label="Add a new project"
+              >
+                <div className={`rounded-full p-4 ${Colors.background.secondary}`}>
+                  <FolderPlus size={36} className={`${Colors.text.special} opacity-80 transition-opacity group-hover:opacity-100`} />
+                </div>
+                <p className="text-base font-semibold">Start your first project</p>
+                <p className={`${Colors.text.secondary} text-sm`}>
+                  Click to open the add project modal.
+                </p>
+              </button>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {projects.map((project: Project, index) => (
+                  <ProjectCard key={`${project.id}-${index}`} project={project} />
+                ))}
+              </div>
+            )}
+
+            <div
+              ref={observerRef}
+              className="flex min-h-10 w-full justify-center py-8"
+            >
+              {loading && <Spinner />}
+            </div>
+          </div>
+        </main>
       </div>
 
       <AddProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={handleRefresh} // Reset and reload to show newest project at top
+        onSuccess={handleRefresh}
       />
     </div>
   );

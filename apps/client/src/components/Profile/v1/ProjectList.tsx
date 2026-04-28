@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import type { Project } from "@/../server/utils/type";
 import Spinner from "@/components/General/Spinner";
 import { useUserStore } from "@/store/user-store";
+import { FolderKanban, Plus } from "lucide-react";
 
 export default function JobList() {
   const Colors = useColors();
@@ -82,7 +83,20 @@ export default function JobList() {
           <Spinner />
         </div>
       ) : !loading && loadedProjects.length === 0 ? (
-        <p className={`text-sm ${Colors.text.secondary} opacity-80`}>No projects to display.</p>
+        <button
+          type="button"
+          onClick={redirectToProjects}
+          className={`group flex w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-8 text-center transition-colors ${Colors.border.specialThick} ${Colors.properties.interactiveButton}`}
+          aria-label="Go to projects"
+        >
+          <div className={`rounded-full p-4 ${Colors.background.secondary}`}>
+            <Plus size={36} className={`${Colors.text.special} opacity-80 transition-opacity group-hover:opacity-100`} />
+          </div>
+          <p className="text-base font-semibold">Create your first project</p>
+          <p className={`text-sm ${Colors.text.secondary} opacity-80`}>
+            Get started by creating your first project.
+          </p>
+        </button>
       ) : (
         <div className="flex-1 overflow-y-auto pr-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 pb-1">
