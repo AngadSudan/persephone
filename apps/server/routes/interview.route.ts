@@ -112,10 +112,16 @@ interviewRouter.post(
   authMiddleware,
   interviewController.createInterview,
 );
+
 interviewRouter.get(
   "/interview-suite/interview/get-all/:id",
   authMiddleware,
   interviewController.getAllRoundInterview,
+);
+interviewRouter.get(
+  "/interview-suite/interview/get-all-user-interview",
+  authMiddleware,
+  interviewController.getUserInterview,
 );
 interviewRouter.put(
   "/interview-suite/interview/start/:id",

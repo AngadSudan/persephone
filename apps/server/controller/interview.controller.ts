@@ -9,9 +9,12 @@ import {
   setCacheSafe,
 } from "../utils/cache";
 
-const getRoundInterviewsCacheKey = (roundId: string) => `/interviews/round/${roundId}`;
-const getInterviewDetailCacheKey = (interviewId: string) => `/interviews/${interviewId}`;
-const getUserInterviewsCacheKey = (userId: string) => `/interviews/user/${userId}`;
+const getRoundInterviewsCacheKey = (roundId: string) =>
+  `/interviews/round/${roundId}`;
+const getInterviewDetailCacheKey = (interviewId: string) =>
+  `/interviews/${interviewId}`;
+const getUserInterviewsCacheKey = (userId: string) =>
+  `/interviews/user/${userId}`;
 
 const invalidateInterviewCaches = async ({
   roundId,
@@ -118,7 +121,13 @@ class InterviewController {
       if (cachedInterviews !== null) {
         return res
           .status(200)
-          .json(apiResponse(200, "interview Round fetched (Cache)", cachedInterviews));
+          .json(
+            apiResponse(
+              200,
+              "interview Round fetched (Cache)",
+              cachedInterviews,
+            ),
+          );
       }
 
       const dbInterview = await prismaClient.interview.findMany({
@@ -172,7 +181,9 @@ class InterviewController {
       }
       if (!dbUser) throw new Error("user not found");
 
-      const interviewCacheKey = getInterviewDetailCacheKey(interviewId as string);
+      const interviewCacheKey = getInterviewDetailCacheKey(
+        interviewId as string,
+      );
       const cachedInterview = await getCacheSafe(interviewCacheKey);
 
       if (cachedInterview !== null) {
@@ -249,20 +260,27 @@ class InterviewController {
       if (cachedInterviews !== null) {
         return res
           .status(200)
-          .json(apiResponse(200, "interview fetched (Cache)", cachedInterviews));
+          .json(
+            apiResponse(200, "interview fetched (Cache)", cachedInterviews),
+          );
       }
 
       const dbInterview = await prismaClient.interview.findMany({
         where: {
-          roundCandidateId: {
-            contains: dbUser.id,
+          roundCandidate: {
+            candidateId: dbUser.id,
           },
-          OR: [
-            { interviewStatus: "PENDING" },
-            { interviewStatus: "UNDER_PROGRESS" },
-          ],
+          interviewStatus: {
+            in: ["PENDING", "UNDER_PROGRESS"],
+          },
+        },
+        include: {
+          interviewRound: true,
+          roundCandidate: true,
         },
       });
+
+      console.log(dbInterview);
 
       await setCacheSafe(userInterviewsCacheKey, dbInterview);
 

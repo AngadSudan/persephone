@@ -1,0 +1,45 @@
+name: Server Code Integration
+on: [push]
+
+jobs:
+  build:
+    name: Fetch-code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Execute remote SSH and fetch updates
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            set -e
+            set -o pipefail
+
+            export NVM_DIR="$HOME/.nvm"
+            source ~/.bashrc
+            source ~/.profile
+            source "$NVM_DIR/nvm.sh"
+
+            cd persephone
+            git pull origin main
+
+            cd apps/client
+            bun install
+            bun run build
+
+            cd ../server
+            bun install
+
+            cd ../../packages/db
+            bunx prisma db push
+            bunx prisma generate
+
+            cd ../redis
+            bun run build
+
+            cd ../../apps/worker-server
+            bun install
+            pm2 restart all

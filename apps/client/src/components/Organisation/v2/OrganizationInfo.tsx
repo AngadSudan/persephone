@@ -150,16 +150,42 @@ export default function OrganizationInfo() {
       )}
 
       <div
-        className={`flex flex-col items-start gap-1 mb-4 ${Colors.text.primary}`}
+        className={`rounded-lg ${Colors.background.secondary} ${Colors.border.defaultThin} p-4`}
       >
-        <p className={`text-sm ${Colors.text.secondary} italic`}>
-          {data?.tagline}
-        </p>
-        <h2 className={`text-md`}>{data?.name}</h2>
-      </div>
-      <div className="flex relative items-center justify-between bottom-0">
-        <h1 className="text-xl font-semibold">{data?.email}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className={`text-xs uppercase tracking-widest ${Colors.text.secondary}`}>
+              Company Profile
+            </p>
+            <h2 className={`text-2xl font-semibold leading-tight ${Colors.text.primary} truncate`}>
+              {data?.name || "-"}
+            </h2>
+            {data?.username && (
+              <p className={`text-sm mt-1 ${Colors.text.secondary}`}>
+                @{data.username}
+              </p>
+            )}
+          </div>
 
+          <div className={`h-12 w-12 rounded-full ${Colors.border.fadedThin} ${Colors.text.primary} flex items-center justify-center text-lg font-semibold shrink-0`}>
+            {data?.name?.[0]?.toUpperCase() || "C"}
+          </div>
+        </div>
+
+        {data?.tagline && (
+          <p className={`mt-3 text-sm italic ${Colors.text.secondary}`}>
+            {data.tagline}
+          </p>
+        )}
+
+        <div className={`mt-4 pt-3 ${Colors.border.defaultThinTop}`}>
+          <p className={`text-xs uppercase tracking-wider ${Colors.text.secondary}`}>
+            Contact Email
+          </p>
+          <h3 className={`text-base font-medium ${Colors.text.primary} break-all`}>
+            {data?.email || "-"}
+          </h3>
+        </div>
       </div>
 
 

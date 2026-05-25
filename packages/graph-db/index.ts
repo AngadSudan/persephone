@@ -30,18 +30,14 @@ class GraphClient {
   isConnected: boolean;
   client: Driver | null;
 
-  constructor(url: string) {
+  constructor(url: string, username: string, password: string) {
     this.url = url;
     this.isConnected = false;
 
-    this.client = neo4j.driver(
-      this.url!,
-      neo4j.auth.basic("neo4j", "password"),
-    );
+    this.client = neo4j.driver(this.url!, neo4j.auth.basic(username, password));
   }
 
   async createUserNode(options: UserObject) {
-    console.log("===========inside inner function ==========")
     const query = `
     MERGE (n:User {email: $email})
     SET
@@ -50,9 +46,9 @@ class GraphClient {
     n.tagline = $tagline
     RETURN n
     `;
-    
+
     const session = this.client?.session();
-    
+
     try {
       const result = await session?.run(query, {
         id: options.id,
@@ -60,16 +56,13 @@ class GraphClient {
         email: options.email,
         tagline: options.tagline || "default tagline",
       });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
-      
+
       return result?.records;
     } catch (error: any) {
       console.log(error);
       throw new Error(error.message);
     } finally {
       await session?.close();
-      console.log("===========exiting inner function ==========")
     }
   }
 
@@ -83,8 +76,6 @@ class GraphClient {
 
     try {
       const result = await session?.run(query, { id: userID });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.records;
     } catch (error: any) {
@@ -104,8 +95,6 @@ class GraphClient {
 
     try {
       const result = await session?.run(query, { id: userId });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.records;
     } catch (error: any) {
@@ -133,8 +122,6 @@ class GraphClient {
         projectLiveLink: options.liveLink,
         projectGithubLink: options.githubLink,
       });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.records;
     } catch (error: any) {
@@ -154,9 +141,6 @@ class GraphClient {
     try {
       const result = await session?.run(query, { id: id });
 
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
-
       return result?.records;
     } catch (error: any) {
       throw new Error(error.message);
@@ -173,8 +157,6 @@ class GraphClient {
     const session = this.client?.session();
     try {
       const result = await session?.run(query, { id: id });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.records;
     } catch (error: any) {
@@ -194,8 +176,6 @@ class GraphClient {
 
     try {
       const result = await session?.run(query, { name: skillName });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.records;
     } catch (error: any) {
@@ -214,9 +194,6 @@ class GraphClient {
 
     try {
       const result = await session?.run(query, { name: skillName });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
-
       return result?.records;
     } catch (error: any) {
       throw new Error(error.message);
@@ -234,8 +211,6 @@ class GraphClient {
 
     try {
       const result = await session?.run(query, { name: skillName });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.records;
     } catch (error: any) {
@@ -264,8 +239,6 @@ class GraphClient {
         name: options.name,
         stipend: options.stipend,
       });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.records;
     } catch (error: any) {
@@ -286,8 +259,6 @@ class GraphClient {
       const result = await session?.run(query, {
         id: id,
       });
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.records;
     } catch (error: any) {
@@ -306,9 +277,6 @@ class GraphClient {
 
     try {
       const result = await session?.run(query, { id });
-
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.summary;
     } catch (error: any) {
@@ -332,9 +300,6 @@ class GraphClient {
     try {
       const result = await session?.run(query, { id1, id2 });
 
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
-
       return result?.summary;
     } catch (error: any) {
       throw new Error(error.message);
@@ -355,9 +320,6 @@ class GraphClient {
 
     try {
       const result = await session?.run(query, { userID, projectId });
-
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.summary;
     } catch (error: any) {
@@ -382,9 +344,6 @@ class GraphClient {
     try {
       const result = await session?.run(query, { projectId, skillName });
 
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
-
       return result?.summary;
     } catch (error: any) {
       throw new Error(error.message);
@@ -407,9 +366,6 @@ class GraphClient {
         jobId,
         skillName,
       });
-
-      console.log(JSON.stringify(result?.records, null, 2));
-      console.log(JSON.stringify(result?.summary, null, 2));
 
       return result?.summary;
     } catch (error: any) {

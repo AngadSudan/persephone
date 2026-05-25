@@ -9,7 +9,7 @@ import { useUserStore } from "@/store/user-store";
 const Links = [
   { href: "/feed", label: "Feed", icon: House },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/interviews", label: "Interviews", icon: MessageSquareText },
+  { href: "/interview", label: "Interviews", icon: MessageSquareText },
 ];
 
 function Sidebar() {

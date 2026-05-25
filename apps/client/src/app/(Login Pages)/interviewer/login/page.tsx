@@ -36,7 +36,8 @@ export default function InterviewerLoginPage() {
       );
       toast.success("Logged in successfully!");
       setData(res.data.data.data);
-      router.push("/profile");
+      //TODO: add the correct dashboard route
+      router.push("/interviewer-dashboard");
     } catch (err) {
       toast.error("Failed to login. Please try again.");
       console.error(err);
@@ -63,8 +64,12 @@ export default function InterviewerLoginPage() {
 
           <div className="relative max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-emerald-500/30 bg-[#0a0a0a] p-6 shadow-2xl md:p-8">
             <div className="mb-6 text-center md:mb-8">
-              <h1 className="text-3xl font-bold text-white">Interviewer Login</h1>
-              <p className="mt-2 text-sm text-gray-400">Login to your interviewer account</p>
+              <h1 className="text-3xl font-bold text-white">
+                Interviewer Login
+              </h1>
+              <p className="mt-2 text-sm text-gray-400">
+                Login to your interviewer account
+              </p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -82,7 +87,9 @@ export default function InterviewerLoginPage() {
                   className="mt-1 w-full rounded-lg border border-gray-700 bg-black px-4 py-3 text-white focus:border-emerald-500"
                 />
                 {errors.email && (
-                  <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
 
@@ -106,12 +113,17 @@ export default function InterviewerLoginPage() {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
 
               <div className="text-right text-sm">
-                <Link href="/forgot-password" className="text-emerald-400 hover:underline">
+                <Link
+                  href="/forgot-password"
+                  className="text-emerald-400 hover:underline"
+                >
                   Forgot Password?
                 </Link>
               </div>
