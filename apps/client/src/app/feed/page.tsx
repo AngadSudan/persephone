@@ -1,11 +1,12 @@
-import React from 'react'
-import Feed from '@/components/Feed/Feed'
+import React from "react";
+import Feed from "@/components/Feed/Feed";
+import UserAppShell from "@/components/General/layouts/UserAppShell";
 const page = () => {
   return (
-    <div>
+    <UserAppShell>
       <Feed />
-    </div>
-  )
-}
+    </UserAppShell>
+  );
+};
 
-export default page
+export default page;

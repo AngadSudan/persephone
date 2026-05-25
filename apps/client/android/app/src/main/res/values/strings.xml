@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Persephone</string>
+    <string name="title_activity_main">Persephone</string>
+    <string name="package_name">com.persephone.app</string>
+    <string name="custom_url_scheme">com.persephone.app</string>
+</resources>

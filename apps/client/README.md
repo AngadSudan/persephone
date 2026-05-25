@@ -34,3 +34,35 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Mobile Build (Ionic + Capacitor)
+
+This app is configured with Ionic CLI and Capacitor for Android and iOS.
+
+### One-time setup
+
+```bash
+cd apps/client
+bun run cap:add:android
+bun run cap:add:ios
+```
+
+### Fresh Android APK build
+
+```bash
+cd apps/client
+bun run apk:fresh
+```
+
+APK output:
+
+```text
+apps/client/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+### Notes for Next.js static export
+
+Capacitor uses static web assets from `out/`.  
+If build fails with `missing generateStaticParams()` for dynamic routes, add
+`generateStaticParams()` for those routes (or make those routes static-safe)
+before running `bun run apk:fresh`.

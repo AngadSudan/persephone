@@ -62,8 +62,8 @@ class InterviewSuiteController {
         data: {
           name: data.name,
           jobListingId: dbJobListing.id,
-          startDate: data.startDate,
-          endDate: data.endDate,
+          startDate: new Date(data.startDate),
+          endDate: new Date(data.endDate),
           creatorId: dbUser.id,
           publishStatus: data.publishStatus ?? "NOT_PUBLISHED",
           orgId: dbUser.orgId,

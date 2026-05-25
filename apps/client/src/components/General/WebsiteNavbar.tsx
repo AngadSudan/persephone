@@ -1,6 +1,5 @@
 "use client";
 
-import { useColors } from "@/components/General/(Color Manager)/useColors";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { User, Bell } from "lucide-react";
@@ -14,7 +13,7 @@ const navLinks = [
   { href: "/feed", label: "FEED" },
   { href: "/projects", label: "PROJECTS" },
   { href: "/jobs", label: "JOBS" },
-  { href: "/interviews", label: "INTERVIEWS" },
+  { href: "/interview", label: "INTERVIEWS" },
 ];
 
 export function WebsiteNavbar() {
@@ -24,96 +23,85 @@ export function WebsiteNavbar() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-  const getData = async () => {
-    try {
-      const res = await fetch(backendUrl + "/api/v1/users/get-profile", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
-      if (!res) throw new Error("Unable to get Data");
-
-      const result = await res.json();
-      // console.log("Data fetch success:", result.data);
-      setData(result.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   useEffect(() => {
+    const getData = async () => {
+      try {
+        const res = await fetch(backendUrl + "/api/v1/users/get-profile", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        if (!res) throw new Error("Unable to get Data");
+
+        const result = await res.json();
+        setData(result.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     getData();
-    console.log(data);
-  }, []);
+  }, [backendUrl]);
 
   return (
     <>
-      {/* Handle/Trigger Area */}
-      <div className="fixed top-0 left-0 right-0 h-8 z-50 group/navbar font-mono">
-        {/* Visual Handle */}
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 transition-all duration-300 group-hover/navbar:translate-y-1">
-          <div className="w-12 h-1 bg-neutral-600/50 rounded-full group-hover/navbar:bg-neutral-400/70 transition-all duration-300"></div>
-        </div>
-
-        {/* Navbar Container */}
-        <div className="fixed top-0 left-0 right-0 px-4 pt-5 pb-2 sm:px-6 w-full transform -translate-y-full transition-all duration-500 ease-out group-hover/navbar:translate-y-0">
-          <div className="mx-auto max-w-[75%] min-w-[320px] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl">
-            <div className="flex h-14 items-center justify-between rounded-3xl border border-neutral-700 bg-neutral-900/80 px-4 shadow-sm sm:px-5 backdrop-blur-sm transition-all duration-300 group-hover:shadow-lg group-hover:shadow-neutral-700/20 group-hover:bg-neutral-900">
-              {/* Left: Persephone Logo */}
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 sm:px-6 font-mono">
+        <div className="mx-auto max-w-6xl">
+          <div className="premium-panel flex min-h-16 items-center justify-between rounded-[1.75rem] px-4 sm:px-5">
+            <div className="flex items-center gap-4">
               <Link
                 href="/"
                 className="flex shrink-0 items-center justify-center text-white cursor-pointer font-bold text-lg relative group/logo"
                 aria-label="Home"
               >
-                <span className="transition-all duration-300 group-hover/logo:scale-110 group-hover/logo:rotate-2 inline-block">
+                <span className="transition-all duration-300 group-hover/logo:scale-105 inline-block tracking-tight">
                   Persephone
                 </span>
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover/logo:w-full"></span>
+                <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-[#6BFBBF] transition-all duration-300 group-hover/logo:w-full"></span>
               </Link>
+              <div className="hidden rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] uppercase tracking-[0.28em] text-white/45 lg:block">
+                Developer Hiring OS
+              </div>
+            </div>
 
-              {/* Middle: Nav Links */}
-              <nav className="hidden items-center gap-8 md:flex absolute left-1/2 transform -translate-x-1/2">
+            <nav className="hidden items-center gap-2 md:flex">
                 {navLinks.map((link, index) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="relative text-sm font-medium tracking-wide text-white group/link"
+                    className="group/link relative rounded-full px-4 py-2 text-sm font-medium tracking-wide text-white/78 transition-all duration-300 hover:bg-white/7 hover:text-white"
                     onMouseEnter={() => setHoveredIndex(index)}
                     onMouseLeave={() => setHoveredIndex(null)}
                   >
-                    <span className="relative inline-block transition-all duration-300 group-hover/link:-translate-y-1 group-hover/link:scale-105">
+                    <span className="relative inline-block transition-all duration-300 group-hover/link:-translate-y-0.5">
                       {link.label}
                     </span>
                     <span
-                      className={`absolute -bottom-1 left-0 h-0.5 bg-white transition-all duration-300 ${
-                        hoveredIndex === index ? "w-full" : "w-0"
+                      className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#6BFBBF] transition-all duration-300 ${
+                        hoveredIndex === index ? "opacity-100" : "opacity-0"
                       }`}
-                    ></span>
-                    <span className="absolute inset-0 -z-10 rounded-lg bg-white/5 scale-0 transition-transform duration-300 group-hover/link:scale-100"></span>
+                    />
                   </Link>
                 ))}
               </nav>
 
-              {/* Right: Profile */}
               <div className="flex items-center gap-3">
-                {/* Notification Icon */}
                 <button
                   onClick={() => setNotificationOpen(true)}
-                  className="hidden sm:flex items-center justify-center text-white relative group/notification overflow-hidden w-10 h-10 transition-all duration-300"
+                  className="hidden sm:flex items-center justify-center text-white/80 relative group/notification overflow-hidden h-11 w-11 rounded-full border border-white/10 bg-white/5 transition-all duration-300 hover:border-white/20 hover:text-white"
                   aria-label="Notifications"
                 >
                   <Bell className="w-5 h-5 transition-all duration-300 group-hover/notification:scale-110" />
-
-                  {/* RED DOT */}
                   {hasUnreadNotifications && (
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
                   )}
                 </button>
                 <Link
                   href="/profile"
-                  className="hidden sm:flex items-center justify-center text-white relative group/profile overflow-hidden w-10 h-10 rounded-full border border-neutral-700 hover:border-white/40 transition-all duration-300"
+                  className="hidden sm:flex items-center justify-center text-white relative group/profile overflow-hidden h-11 w-11 rounded-full border border-white/10 bg-white/5 hover:border-white/30 transition-all duration-300"
                   aria-label="Profile"
                 >
                   {data?.profileUrl ? (
@@ -130,39 +118,32 @@ export function WebsiteNavbar() {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((prev) => !prev)}
-                  className="rounded p-2 text-neutral-400 md:hidden transition-all duration-300 hover:rotate-180 hover:text-white hover:scale-110 active:scale-95"
+                  className="rounded-full border border-white/10 bg-white/5 p-2 text-neutral-300 md:hidden transition-all duration-300 hover:text-white active:scale-95"
                   aria-label="Menu"
                 >
-                  <span
-                    className={`inline-block transition-all duration-300 ${menuOpen ? "rotate-90 scale-110" : "rotate-0"}`}
-                  >
-                    {menuOpen ? "✕" : "☰"}
-                  </span>
+                  <span className="inline-block text-base">{menuOpen ? "✕" : "☰"}</span>
                 </button>
               </div>
             </div>
-          </div>
-
-          {menuOpen && (
-            <div className="rounded-b-3xl border border-t-0 border-neutral-700 bg-neutral-900/90 backdrop-blur-sm md:hidden animate-slideDown overflow-hidden">
+          {menuOpen ? (
+            <div className="premium-panel mt-3 overflow-hidden rounded-[1.5rem] md:hidden animate-slideDown">
               <nav className="flex flex-col gap-2 px-4 py-4">
                 {navLinks.map((link, index) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="py-2 text-neutral-400 hover:text-white transition-all duration-300 hover:translate-x-2 hover:scale-105 relative group/mobile"
+                    className="relative rounded-xl px-3 py-3 text-neutral-300 transition-all duration-300 hover:bg-white/7 hover:text-white"
                     onClick={() => setMenuOpen(false)}
                     style={{
                       animation: `slideIn 0.3s ease-out ${index * 0.05}s both`,
                     }}
                   >
                     <span className="relative z-10">{link.label}</span>
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-white transition-all duration-300 group-hover/mobile:h-full"></span>
                   </Link>
                 ))}
                 <Link
                   href="/profile"
-                  className="py-2 text-neutral-400 hover:text-white transition-all duration-300 hover:translate-x-2 hover:scale-105 relative group/mobile flex items-center gap-2"
+                  className="relative flex items-center gap-2 rounded-xl px-3 py-3 text-neutral-300 transition-all duration-300 hover:bg-white/7 hover:text-white"
                   onClick={() => setMenuOpen(false)}
                   style={{
                     animation: `slideIn 0.3s ease-out ${navLinks.length * 0.05}s both`,
@@ -178,11 +159,10 @@ export function WebsiteNavbar() {
                     <User className="w-5 h-5" />
                   )}
                   <span className="relative z-10">PROFILE</span>
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-white transition-all duration-300 group-hover/mobile:h-full"></span>
                 </Link>
               </nav>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { Job } from "./JobListingPage";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import { ExternalLink } from "lucide-react";
 import { applyToJob } from "@/api/jobs/applyToJobs";
+import toast from "react-hot-toast";
 
 interface JobActionsProps {
   job: Job;
@@ -15,12 +16,13 @@ export default function JobActions({ job }: JobActionsProps) {
 
   const [resume, setResume] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [applied, setApplied] = useState(false);
 
   const tags = [job.jobType, job.jobRole, job.organization].filter(Boolean);
 
   const handleApply = async () => {
     if (!resume) {
-      alert("Please upload your resume before applying.");
+      toast.error("Please upload your resume before applying.");
       return;
     }
 
@@ -29,12 +31,13 @@ export default function JobActions({ job }: JobActionsProps) {
 
       await applyToJob(job.id, resume);
 
-      alert("Application submitted successfully!");
+      toast.success("Application submitted successfully.");
 
       setResume(null);
+      setApplied(true);
     } catch (error) {
       console.error("Failed to apply:", error);
-      alert("Failed to apply. Please try again.");
+      toast.error("Failed to apply. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -65,7 +68,12 @@ export default function JobActions({ job }: JobActionsProps) {
         accept=".pdf,.doc,.docx"
         onChange={(e) => {
           if (e.target.files?.[0]) {
-            setResume(e.target.files[0]);
+            const selectedFile = e.target.files[0];
+            if (selectedFile.size > 10 * 1024 * 1024) {
+              toast.error("Resume must be under 10MB.");
+              return;
+            }
+            setResume(selectedFile);
           }
         }}
         className="text-sm"
@@ -75,7 +83,7 @@ export default function JobActions({ job }: JobActionsProps) {
       <div className="flex items-center gap-4">
         <button
           onClick={handleApply}
-          disabled={loading}
+          disabled={loading || applied}
           className={`
             flex items-center gap-2
             px-6 py-2.5
@@ -88,7 +96,7 @@ export default function JobActions({ job }: JobActionsProps) {
             disabled:opacity-50
           `}
         >
-          {loading ? "Applying..." : "Apply Now"}
+          {loading ? "Applying..." : applied ? "Applied" : "Apply Now"}
           <ExternalLink size={16} />
         </button>
       </div>

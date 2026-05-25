@@ -18,6 +18,11 @@ import { generateFreshTokens } from "../utils/jwt";
 import { generatePassword } from "../utils/nodemailer/GeneratePass";
 import cacheClient from "../utils/redis";
 import graphService from "../service/graph.service";
+import {
+  clearAccessTokenCookie,
+  setAccessTokenCookie,
+  setResetTokenCookie,
+} from "../utils/cookie";
 
 class AuthController {
   async OrganizationRegister(req: Request, res: Response) {
@@ -82,11 +87,7 @@ class AuthController {
         id: organization.id,
         type: "ORGANIZATION",
       });
-      res.cookie("accessToken", token.accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-      });
+      setAccessTokenCookie(req, res, token.accessToken);
       return res
         .status(200)
         .json(
@@ -116,6 +117,11 @@ class AuthController {
           orgId: "698b347a2927cd5892ece1f5" as any,
         },
       });
+      await graphService.createUser(
+        createdInterviewer.id,
+        createdInterviewer.username,
+        createdInterviewer.email,
+      );
       const email = data.email;
       await handleSendMail(email, generatedPassword);
       if (!createdInterviewer) throw new Error("Error Creating Interviewer");
@@ -162,11 +168,7 @@ class AuthController {
         id: interviewer.id,
         type: "INTERVIEWER",
       });
-      res.cookie("accessToken", token.accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-      });
+      setAccessTokenCookie(req, res, token.accessToken);
       return res
         .status(200)
         .json(
@@ -242,11 +244,7 @@ class AuthController {
         id: user.id,
         type: "USER",
       });
-      res.cookie("accessToken", token.accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-      });
+      setAccessTokenCookie(req, res, token.accessToken);
       return res
         .status(200)
         .json(apiResponse(200, "login successful", { data: dbuser, token }));
@@ -280,11 +278,7 @@ class AuthController {
       const isCorrect = handleVerifyOTP(email, otp);
       const resetToken = generateResetToken(email);
       if (!isCorrect) throw new Error("otp is not verified");
-      res.cookie("resetToken", resetToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-      });
+      setResetTokenCookie(req, res, resetToken);
       res
         .status(200)
         .json(apiResponse(200, "OTP verified sucessfully", resetToken));
@@ -371,11 +365,7 @@ class AuthController {
 
   async Logout(req: Request, res: Response) {
     try {
-      res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-      });
+      clearAccessTokenCookie(req, res);
 
       return res.json({ success: true });
     } catch (error: any) {

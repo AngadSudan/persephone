@@ -14,18 +14,28 @@ export default function JobDescription({ job }: JobDescriptionProps) {
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">About the job</h2>
 
-      <p className="font-medium">Who We Are Is What We Do.</p>
-
       <p className={`${Colors.text.secondary}`}>
-        Deel is the all-in-one payroll and HR platform for global teams. Our
-        vision is to unlock global opportunity for every person, team, and
-        business. Built for the way the world works today.
+        {job.jobDescription}
       </p>
 
-      <p className={`${Colors.text.secondary}`}>
-        Deel combines HRIS, payroll, compliance, benefits, performance, and
-        equipment management into one seamless platform.
-      </p>
+      <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+        <div className={`rounded-lg border border-white/10 p-3 ${Colors.background.primary}`}>
+          <p className="text-white/60">Job Type</p>
+          <p>{job.jobType}</p>
+        </div>
+        <div className={`rounded-lg border border-white/10 p-3 ${Colors.background.primary}`}>
+          <p className="text-white/60">Compensation</p>
+          <p>{job.payment}</p>
+        </div>
+        <div className={`rounded-lg border border-white/10 p-3 ${Colors.background.primary}`}>
+          <p className="text-white/60">Start Date</p>
+          <p>{new Date(job.startDate).toLocaleDateString()}</p>
+        </div>
+        <div className={`rounded-lg border border-white/10 p-3 ${Colors.background.primary}`}>
+          <p className="text-white/60">End Date</p>
+          <p>{new Date(job.endDate).toLocaleDateString()}</p>
+        </div>
+      </div>
     </div>
   );
 }

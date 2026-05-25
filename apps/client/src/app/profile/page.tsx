@@ -1,5 +1,10 @@
 import Profile from "@/components/Profile/Profile";
+import UserAppShell from "@/components/General/layouts/UserAppShell";
 
 export default function profile() {
-  return <Profile />;
+  return (
+    <UserAppShell>
+      <Profile />
+    </UserAppShell>
+  );
 }

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import jobListingController from "../controller/job-listing.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
+import upload from "../middleware/multer.middleware";
 const jobListingRouter = Router();
 
 jobListingRouter.post("/create-job-listing",authMiddleware,jobListingController.createJobListing);
@@ -17,6 +18,11 @@ jobListingRouter.get("/get-job-listings-count",authMiddleware,jobListingControll
 
 jobListingRouter.get("/get-job-listing-by-id/:jobId",authMiddleware,jobListingController.getJobListingById);
 
-jobListingRouter.put("/apply-to-job/:jobId",authMiddleware,jobListingController.applyToJob);
+jobListingRouter.put(
+  "/apply-to-job/:jobId",
+  authMiddleware,
+  upload.single("resume"),
+  jobListingController.applyToJob,
+);
 
 export default jobListingRouter;

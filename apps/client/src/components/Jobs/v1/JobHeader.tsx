@@ -36,7 +36,7 @@ export default function JobHeader({ job }: JobHeaderProps) {
           <span>•</span>
           <span>{job.totalApplicants ?? 0} applicants</span>
           <span>•</span>
-          <span>Posted {job.createdAt}</span>
+          <span>Posted {new Date(job.createdAt).toLocaleDateString()}</span>
         </div>
       </div>
     </div>

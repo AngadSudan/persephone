@@ -211,7 +211,48 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), sans-serif;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at top left, rgba(107, 251, 191, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(90, 140, 255, 0.08), transparent 24%),
+    linear-gradient(180deg, #0d1111 0%, #121313 38%, #171919 100%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(107, 251, 191, 0.28);
+  color: #f7fffb;
+}
+
+.premium-panel {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+    rgba(18, 19, 19, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(18px);
+}
+
+.premium-subtle-panel {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.premium-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center;
+}
+
+.premium-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(107, 251, 191, 0.45) rgba(255,255,255,0.04);
 }
 
 @keyframes spin-slow {

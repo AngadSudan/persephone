@@ -1,11 +1,21 @@
 import React from "react";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
+import Link from "next/link";
 
-interface fnHandler {
-  data: any[];
-}
+type InterviewItem = {
+  id: string;
+  slug: string;
+  interviewStatus: "PENDING" | "UNDER_PROGRESS" | "COMPLETED" | string;
+  scheduledAt: string;
+  interviewer?: {
+    name?: string;
+  } | null;
+  interviewRound?: {
+    name?: string;
+  } | null;
+};
 
-function Interviews({ data }: fnHandler) {
+function Interviews({ data }: { data: InterviewItem[] }) {
   const Colors = useColors();
 
   if (!data || data.length === 0) {
@@ -19,40 +29,38 @@ function Interviews({ data }: fnHandler) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid gap-4 xl:grid-cols-2">
       {data.map((item, index) => (
         <div
           key={item.id || index}
-          className={`w-full p-4 rounded-xl flex justify-between items-center ${Colors.background.secondary} ${Colors.border.fadedThin}`}
+          className="premium-subtle-panel flex flex-col gap-4 rounded-[1.5rem] p-5 md:flex-row md:items-center md:justify-between"
         >
-          {/* LEFT SECTION */}
-          <div className="flex flex-col gap-1">
-            <p className={`${Colors.text.primary} font-semibold`}>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+            <p className={`${Colors.text.primary} text-lg font-semibold tracking-tight`}>
               {item?.interviewer?.name || "Unknown Interviewer"}
+            </p>
+              <span className="rounded-full border border-[#6BFBBF]/25 bg-[#6BFBBF]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6BFBBF]">
+                {item?.interviewStatus.replace("_", " ")}
+              </span>
+            </div>
+
+            <p className={`text-sm ${Colors.text.secondary}`}>
+              {item?.interviewRound?.name || "Interview Round"}
             </p>
 
             <p className={`text-sm ${Colors.text.secondary}`}>
-              {item?.interviewer?.Organization?.name || "Unknown Org"}
-            </p>
-
-            <p className={`text-xs ${Colors.text.secondary}`}>
-              {new Date(item.createdAt).toLocaleDateString()}
+              {new Date(item.scheduledAt).toLocaleString()}
             </p>
           </div>
 
-          {/* RIGHT SECTION */}
           <div className="flex items-center gap-3">
-            <span
-              className={`px-3 py-1 text-sm rounded-full ${Colors.background.accent} ${Colors.text.inverted}`}
+            <Link
+              href={`/interview/${item.slug || item.id}`}
+              className="rounded-full bg-[#6BFBBF] px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-black shadow-[0_16px_30px_rgba(107,251,191,0.18)]"
             >
-              {item?.interviewStatus}
-            </span>
-
-            <button
-              className={`px-4 py-2 rounded-lg ${Colors.border.specialThin} ${Colors.text.special} ${Colors.properties.interactiveButton}`}
-            >
-              View
-            </button>
+              Join
+            </Link>
           </div>
         </div>
       ))}

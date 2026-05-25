@@ -275,7 +275,12 @@ class InterviewController {
           },
         },
         include: {
-          interviewRound: true,
+          interviewer: true,
+          interviewRound: {
+            include: {
+              suite: true,
+            },
+          },
           roundCandidate: true,
         },
       });
@@ -387,16 +392,14 @@ class InterviewController {
 
       if (!dbInterview) throw new Error("no such interview found");
 
-      const cachedInterviewData = await cacheClient.getCache(
-        `/active-interview/${dbInterview.slug}`,
-      );
-      let interviewData = JSON.parse(cachedInterviewData);
-      const chat = interviewData.chat;
+      const chat: any[] = [];
 
       // TODO: update the chat
-      await prismaClient.interviewChat.createMany({
-        data: chat,
-      });
+      if (chat.length > 0) {
+        await prismaClient.interviewChat.createMany({
+          data: chat,
+        });
+      }
 
       const updatedInterview = await prismaClient.interview.update({
         where: {

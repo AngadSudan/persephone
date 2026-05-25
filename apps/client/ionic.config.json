@@ -1,0 +1,7 @@
+{
+  "name": "persephone-client",
+  "type": "custom",
+  "integrations": {
+    "capacitor": {}
+  }
+}

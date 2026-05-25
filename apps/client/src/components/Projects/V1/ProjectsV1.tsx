@@ -8,7 +8,6 @@ import AddProjectModal from "./AddProjectModal";
 import type { Project } from "@/../server/utils/type";
 import { ArrowLeftIcon, FolderPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { WebsiteNavbar } from "@/components/General/WebsiteNavbar";
 import Sidebar from "@/components/General/Sidebar";
 
 const PAGE_SIZE = 6;
@@ -163,9 +162,7 @@ export default function ProjectsV1() {
     <div
       className={`${Colors.text.primary} ${Colors.background.primary} min-h-screen w-full overflow-hidden font-mono tracking-tight`}
     >
-      <WebsiteNavbar />
-
-      <div className="grid h-[calc(100vh)] min-h-0 w-full grid-cols-1 gap-4 p-4 lg:grid-cols-[18rem_minmax(0,1fr)] lg:p-6">
+      <div className="grid h-[calc(100vh-2.5rem)] min-h-0 w-full grid-cols-1 gap-4 p-4 lg:grid-cols-[18rem_minmax(0,1fr)] lg:p-6">
         <aside className="min-h-0 h-full">
           <Sidebar />
         </aside>

@@ -11,8 +11,10 @@ type User = {
 };
 
 const navLinks = [
-  { href: "/interviewer-dashboard/interview-suite", label: "InterviewSuite" },
-  { href: "/jobs", label: "JOBS" },
+  { href: "/interviewer-dashboard", label: "PROFILE" },
+  { href: "/interviewer-dashboard/interview-suite", label: "INTERVIEW SUITES" },
+  { href: "/interviewer-dashboard/wishlist", label: "WISHLISTS" },
+  { href: "/interviewer-dashboard/job-listing", label: "JOB LISTINGS" },
 ];
 
 export default function InterviewerNavbar() {

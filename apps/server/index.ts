@@ -13,7 +13,6 @@ import hpp from "hpp";
 import "dotenv/config";
 import morgan from "morgan";
 import dotenv from "dotenv";
-import cacheClient from "./utils/redis";
 import {
   authRouter,
   interviewerRouter,
@@ -38,6 +37,11 @@ import session from "express-session";
 import "./utils/passport";
 
 dotenv.config({ path: "../.env" });
+const isProduction = process.env.NODE_ENV === "production";
+const allowedOrigins = (process.env.FRONTEND_URL || "http://localhost:3000")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
 
 const app: Express = express();
 const server = http.createServer(app);
@@ -62,8 +66,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
     },
   }),
 );
@@ -78,7 +82,14 @@ app.use(cookieParser());
 app.set("trust proxy", 1);
 app.use(
   cors({
-    origin: [process.env.FRONTEND_URL || "http://localhost:3000"],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const normalizedOrigin = origin.replace(/\/+$/, "");
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
@@ -115,10 +126,6 @@ app.get("/health", async (req, res) => {
   });
 });
 app.use("/api/v1/auth", authRouter);
-app.use("/api/admin/v1/flush/redis", async (req, res) => {
-  const data = await cacheClient.clearAllCache();
-  return res.status(200).json({ message: "cleared all cache storage" });
-});
 declare global {
   namespace Express {
     interface Request {
@@ -227,17 +234,6 @@ app.use((req, res) => {
 // Server startup function
 const startServer = async () => {
   try {
-    cacheClient.createClient();
-    cacheClient
-      .connectToClient()
-      .then(() => {
-        console.log("cache layer initialized");
-      })
-      .catch((err) => {
-        console.log(err);
-        console.log(chalk.red("Cache layer initialization failiure"));
-      });
-    console.log(chalk.green("cache layer initialized"));
     server.listen(port, () => {
       console.log(
         chalk.green(

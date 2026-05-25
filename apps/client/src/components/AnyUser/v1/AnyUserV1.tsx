@@ -1,5 +1,4 @@
 import { useColors } from "@/components/General/(Color Manager)/useColors";
-import { WebsiteNavbar } from "@/components/General/WebsiteNavbar";
 import axiosInstance from "@/utils/axiosInstance";
 import React, { useEffect, useState } from "react";
 import SideSection from "./SideSection";
@@ -51,7 +50,6 @@ function AnyUserV1(props: fnHandler) {
           md:p-4
         `}
     >
-      <WebsiteNavbar />
       {/* LEFT SECTION*/}
       <div className="lg:col-span-1 h-full rounded-xl overflow-y-auto scrollbar-hide">
         <SideSection data={data} />

@@ -3,7 +3,6 @@ import { useColors } from "@/components/General/(Color Manager)/useColors";
 import BottomSection from "./BottomSection";
 import SideSection from "./SideSection";
 import TopSection from "./TopSection";
-import { WebsiteNavbar } from "@/components/General/WebsiteNavbar";
 import { useEffect, useState } from "react";
 import axiosInstance from "@/utils/axiosInstance";
 
@@ -47,7 +46,6 @@ export default function ProfilePageV1() {
         md:p-4
       `}
     >
-      <WebsiteNavbar />
       {/* LEFT SECTION*/}
       <div className="lg:col-span-1 h-full rounded-xl overflow-y-auto scrollbar-hide">
         <SideSection />

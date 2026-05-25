@@ -172,7 +172,22 @@ class InterviewerController {
           userInfo: true,
           orgId: true,
           wishlists: true,
-          jobListings: true,
+          jobListings: {
+            select: {
+              id: true,
+              jobRole: true,
+              jobDescription: true,
+              jobType: true,
+              payment: true,
+              startDate: true,
+              endDate: true,
+              _count: {
+                select: {
+                  interviewSuites: true,
+                },
+              },
+            },
+          },
         },
       });
 

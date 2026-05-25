@@ -12,13 +12,14 @@ import {
   invalidateCacheSafe,
   setCacheSafe,
 } from "../utils/cache";
+import prisma from "@codex/prisma";
 
 const getOrgJobListingsCacheKey = (orgId: string) => `/jobListing/org/${orgId}`;
 const getJobListingByIdCacheKey = (jobId: string) => `/jobListing/id/${jobId}`;
-const getJobApplicationsCacheKey = (jobId: string) => `/jobApplication/${jobId}`;
+const getJobApplicationsCacheKey = (jobId: string) =>
+  `/jobApplication/${jobId}`;
 const getInterviewSuiteApplicationsPageZeroCacheKey = (jobId: string) =>
   `/job-listing/${jobId}/application?pageNumber=0`;
-
 
 class JobListingController {
   async createJobListing(req: Request, res: Response) {
@@ -32,19 +33,40 @@ class JobListingController {
           .json(apiResponse(400, "Organization ID not Found!", null));
       }
 
-      const jobListing = await prismaClient.jobListing.create({
-        data: {
-          jobDescription: data.jobDescription,
-          jobRole: data.jobRole,
-          jobType: data.jobType,
-          startDate: data.startDate,
-          endDate: data.endDate,
-          payment: data.payment,
-          organizationId: orgId,
-        },
-      });
+      let jobListing = {};
+      if (req.user.type === "ORGANIZATION") {
+        jobListing = await prismaClient.jobListing.create({
+          data: {
+            jobDescription: data.jobDescription,
+            jobRole: data.jobRole,
+            jobType: data.jobType,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            payment: data.payment,
+            organizationId: orgId,
+          },
+        });
+      } else {
+        let dbUser = await prismaClient.interviewer.findUnique({
+          where: { id: req.user.id },
+        });
+        if (!dbUser?.orgId) throw new Error("no userId Found");
+
+        jobListing = await prismaClient.jobListing.create({
+          data: {
+            jobDescription: data.jobDescription,
+            jobRole: data.jobRole,
+            jobType: data.jobType,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            payment: data.payment,
+            organizationId: dbUser.orgId,
+          },
+        });
+      }
 
       await invalidateCacheSafe(getOrgJobListingsCacheKey(orgId));
+      await invalidateCacheSafe("/jobListing/all");
       const listingData = data as any;
       await graphService.addJobListing(
         orgId,
@@ -107,6 +129,7 @@ class JobListingController {
       });
 
       await invalidateCacheSafe(getOrgJobListingsCacheKey(organization.id));
+      await invalidateCacheSafe("/jobListing/all");
 
       await invalidateCacheSafe(getJobListingByIdCacheKey(jobListId));
 
@@ -136,6 +159,7 @@ class JobListingController {
       }
 
       await invalidateCacheSafe(getOrgJobListingsCacheKey(organization.id));
+      await invalidateCacheSafe("/jobListing/all");
       await invalidateCacheSafe(getJobListingByIdCacheKey(jobListId));
 
       const job = await prismaClient.jobListing.findUnique({
@@ -229,7 +253,10 @@ class JobListingController {
         },
       });
 
-      await setCacheSafe(getJobApplicationsCacheKey(jobListId), jobApplications);
+      await setCacheSafe(
+        getJobApplicationsCacheKey(jobListId),
+        jobApplications,
+      );
 
       return res
         .status(200)
@@ -247,17 +274,22 @@ class JobListingController {
   }
   async getAllJobListings(req: Request, res: Response) {
     try {
-      const orgId = (req.user as any)?.id;
+      const user = req.user as any;
+      const requesterId = user?.id;
+      const requesterType = user?.type;
 
-      if (!orgId) {
+      if (!requesterId) {
         return res
           .status(400)
-          .json(apiResponse(400, "Organization ID not Found !", null));
+          .json(apiResponse(400, "User ID not Found !", null));
       }
 
-      const cacheJobApplication = await getCacheSafe(
-        getOrgJobListingsCacheKey(orgId),
-      );
+      const cacheKey =
+        requesterType === "ORGANIZATION"
+          ? getOrgJobListingsCacheKey(requesterId)
+          : "/jobListing/all";
+
+      const cacheJobApplication = await getCacheSafe(cacheKey);
 
       if (cacheJobApplication !== null) {
         return res
@@ -271,31 +303,66 @@ class JobListingController {
           );
       }
 
-      const allJobListing = await prismaClient.jobListing.findMany({
-        where: {
-          organizationId: orgId,
-        },
-        include: {
-          organization: {
-            select: {
-              id: true,
-              name: true,
-              profileUrl: true,
+      let allJobListing: any[] = [];
+      if (requesterType === "ORGANIZATION") {
+        allJobListing = await prismaClient.jobListing.findMany({
+          where: {
+            organizationId: requesterId,
+          },
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                profileUrl: true,
+              },
+            },
+            interviewer: {
+              select: {
+                name: true,
+                headline: true,
+              },
+            },
+            interviewSuites: true,
+            _count: {
+              select: {
+                jobApplications: true,
+              },
             },
           },
-          interviewer: {
-            select: {
-              name: true,
-              headline: true,
+        });
+      } else {
+        const dbUser = await prismaClient.interviewer.findUnique({
+          where: { id: requesterId },
+        });
+
+        allJobListing = await prismaClient.jobListing.findMany({
+          where: {
+            organizationId: dbUser?.orgId,
+          },
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                profileUrl: true,
+              },
+            },
+            interviewer: {
+              select: {
+                name: true,
+                headline: true,
+              },
+            },
+            interviewSuites: true,
+            _count: {
+              select: {
+                jobApplications: true,
+              },
             },
           },
-          _count: {
-            select: {
-              jobApplications: true,
-            },
-          },
-        },
-      });
+        });
+      }
 
       const formattedJobs = allJobListing.map((job) => ({
         id: job.id,
@@ -306,7 +373,7 @@ class JobListingController {
         startDate: job.startDate,
         endDate: job.endDate,
         createdAt: job.createdAt,
-
+        interviewSuites: job.interviewSuites,
         organization: {
           id: job.organization.id,
           name: job.organization.name,
@@ -315,15 +382,15 @@ class JobListingController {
 
         interviewer: job.interviewer
           ? {
-            name: job.interviewer.name,
-            headline: job.interviewer.headline,
-          }
+              name: job.interviewer.name,
+              headline: job.interviewer.headline,
+            }
           : undefined,
 
         totalApplicants: job._count.jobApplications,
       }));
 
-      await setCacheSafe(getOrgJobListingsCacheKey(orgId), formattedJobs);
+      await setCacheSafe(cacheKey, formattedJobs);
 
       return res
         .status(200)
@@ -333,14 +400,16 @@ class JobListingController {
       return res.status(200).json(apiResponse(400, error.message, null));
     }
   }
-  
+
   async getJobListingsCount(req: Request, res: Response) {
     try {
       const totalListings = await prismaClient.jobListing.count();
 
-      return res
-        .status(200)
-        .json(apiResponse(200, "Job Listings Count Fetched Successfully !", { totalListings }));
+      return res.status(200).json(
+        apiResponse(200, "Job Listings Count Fetched Successfully !", {
+          totalListings,
+        }),
+      );
     } catch (error: any) {
       console.log(error);
       return res.status(200).json(apiResponse(500, error.message, null));
@@ -466,7 +535,9 @@ class JobListingController {
       });
 
       await invalidateCacheSafe(getJobApplicationsCacheKey(jobId));
-      await invalidateCacheSafe(getInterviewSuiteApplicationsPageZeroCacheKey(jobId));
+      await invalidateCacheSafe(
+        getInterviewSuiteApplicationsPageZeroCacheKey(jobId),
+      );
 
       return res
         .status(201)
@@ -479,6 +550,5 @@ class JobListingController {
     }
   }
 }
-
 
 export default new JobListingController();

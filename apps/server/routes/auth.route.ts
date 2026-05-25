@@ -2,6 +2,7 @@ import { Router } from "express";
 import authController from "../controller/auth.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 import passport from "passport";
+import { setAccessTokenCookie } from "../utils/cookie";
 const authRouter = Router();
 authRouter.post("/register/interviewer",authController.CreateInterviewer);
 authRouter.post("/login/interviewer", authController.InterviewerLogin);
@@ -31,11 +32,7 @@ authRouter.get(
 
     const { user, tokens } = req.user;
 
-    res.cookie("accessToken", tokens.accessToken, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-    });
+    setAccessTokenCookie(req, res, tokens.accessToken);
 
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
     res.redirect(`${frontendUrl.replace(/\/+$/, "")}/profile`);
