@@ -457,6 +457,12 @@ class AuthController {
       },
     });
 
+    await graphService.createUser(
+      createdUser.id,
+      createdUser.username,
+      createdUser.email,
+    );
+
     const tokens = generateFreshTokens({
       id: createdUser.id,
       type: "USER",
