@@ -37,7 +37,8 @@ authRouter.get(
       sameSite: "lax",
     });
 
-    res.redirect("http://localhost:3000/profile");
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    res.redirect(`${frontendUrl.replace(/\/+$/, "")}/profile`);
   }
 );
 
