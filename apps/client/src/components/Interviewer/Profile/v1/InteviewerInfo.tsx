@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import toast from "react-hot-toast";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import { Plus } from "lucide-react";
 import Spinner from "@/components/General/Spinner";
@@ -94,27 +92,32 @@ export default function InterviewerInfo() {
       /> */}
 
       {data?.bannerUrl && (
-        <div>
+        <div className="relative mb-5 overflow-hidden rounded-xl">
           <Image
             src={data?.bannerUrl}
             alt="Banner"
-            width={600}
-            height={200}
-            className="w-full relative inset-0 h-30 object-cover z-0 rounded-lg mb-4"
+            width={1200}
+            height={360}
+            className="h-36 w-full object-cover sm:h-40 md:h-44"
+            priority
           />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/35 via-transparent to-black/20" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--bg-primary)]/80 via-transparent to-transparent" />
         </div>
       )}
 
       <div
-        className={`flex flex-col items-start gap-1 mb-4 ${Colors.text.primary}`}
+        className={`flex flex-col items-start gap-1.5 mb-3 ${Colors.text.primary}`}
       >
-        <p className={`text-sm ${Colors.text.secondary} italic`}>
+        <p className={`text-sm ${Colors.text.secondary} italic leading-relaxed`}>
           {data?.tagline}
         </p>
-        <h2 className={`text-md`}>{data?.name}</h2>
+        <h2 className="text-lg font-semibold tracking-tight">{data?.name}</h2>
       </div>
       <div className="flex relative items-center justify-between bottom-0">
-        <h1 className="text-xl font-semibold">{data?.email}</h1>
+        <h1 className={`text-base md:text-lg font-medium ${Colors.text.primary}`}>
+          {data?.email}
+        </h1>
       </div>
     </div>
   );

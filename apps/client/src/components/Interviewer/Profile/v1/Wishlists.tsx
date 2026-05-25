@@ -39,7 +39,7 @@ export default function Wishlists() {
 
   return (
     <button
-      onClick={() => router.push("/interviewer/wishlists")}
+      onClick={() => router.push("/interviewer-dashboard/wishlist")}
       type="button"
       className={`
       group

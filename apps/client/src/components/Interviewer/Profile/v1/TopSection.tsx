@@ -5,9 +5,11 @@ export default function TopSection() {
   const Colors = useColors();
   return (
     <div
-      className={`${Colors.background.secondary} rounded-xl gap-4 p-4 w-full h-full grid grid-cols-3`}
+      className={`${Colors.background.secondary} ${Colors.border.fadedThinBottom} px-4 py-4 md:px-5 md:py-5 w-full`}
     >
-      <div className={`${Colors.background.primary} w-[71vw] rounded-xl p-4`}>
+      <div
+        className={`${Colors.background.primary} ${Colors.border.fadedThin} rounded-xl p-4 md:p-5`}
+      >
         <InteviewerInfo />
       </div>
     </div>

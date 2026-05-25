@@ -442,20 +442,6 @@ export default function SideSection() {
             </button>
 
             <div className="mb-6 font-mono">
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  borderRadius: "10px",
-                  padding: "6px 12px",
-                  fontSize: "0.72rem",
-                  marginBottom: "10px",
-                }}
-                className={`${Colors.background.special} ${Colors.border.defaultThin} ${Colors.text.inverted}`}
-              >
-                <Pencil size={11} /> Edit Profile
-              </div>
               <h2 style={{ fontWeight: 700, fontSize: "1.15rem" }}>
                 Update Your Profile
               </h2>

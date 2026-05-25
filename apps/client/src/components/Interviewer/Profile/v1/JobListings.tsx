@@ -39,7 +39,7 @@ export default function JobListings() {
 
   return (
     <button
-      onClick={() => router.push("/interviewer/job-listings")}
+      onClick={() => router.push("/interviewer-dashboard/job-listing")}
       type="button"
       className={`
           group
