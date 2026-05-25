@@ -84,7 +84,7 @@ class AuthController {
       });
       res.cookie("accessToken", token.accessToken, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "lax",
       });
       return res
@@ -164,7 +164,7 @@ class AuthController {
       });
       res.cookie("accessToken", token.accessToken, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "lax",
       });
       return res
@@ -244,7 +244,7 @@ class AuthController {
       });
       res.cookie("accessToken", token.accessToken, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "lax",
       });
       return res
@@ -282,7 +282,7 @@ class AuthController {
       if (!isCorrect) throw new Error("otp is not verified");
       res.cookie("resetToken", resetToken, {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "lax",
       });
       res
@@ -373,7 +373,7 @@ class AuthController {
     try {
       res.clearCookie("accessToken", {
         httpOnly: true,
-        secure: false,
+        secure: true,
         sameSite: "lax",
       });
 
