@@ -40,6 +40,5 @@ jobs:
             cd ../redis
             bun run build
 
-            cd ../../apps/worker-server
-            bun install
+
             pm2 restart all
