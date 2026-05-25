@@ -1,13 +1,14 @@
-import prisma from '@codex/prisma';
-import { extractTextFromBuffer } from './text-extractor.service';
-import { callGeminiForResumeParsing } from '../integration/gemini/gemini.service';
-import { parseAndValidateYAML } from '../utils/yaml-parser';
+import prisma from "@codex/prisma";
+import { extractTextFromBuffer } from "./text-extractor.service";
+import { callGeminiForResumeParsing } from "../integration/gemini/gemini.service";
+import { parseAndValidateYAML } from "../utils/yaml-parser";
 import {
   mapUserUpdate,
   mapExperiences,
   mapProjects,
-} from './resume-mapper.service';
-import type { ResumeParseResult } from '../utils/type';
+} from "./resume-mapper.service";
+import type { ResumeParseResult } from "../utils/type";
+import graphService from "./graph.service";
 
 export async function parseAndStoreResume(
   userId: string,
@@ -19,15 +20,15 @@ export async function parseAndStoreResume(
   console.log(`[ResumeParser] Extracting text for user ${userId}`);
   const { text } = await extractTextFromBuffer(fileBuffer, mimeType);
 
-  console.log('[ResumeParser] Sending to Gemini…');
+  console.log("[ResumeParser] Sending to Gemini…");
   const rawYaml = await callGeminiForResumeParsing(text);
 
-  console.log('[ResumeParser] Parsing YAML response…');
+  console.log("[ResumeParser] Parsing YAML response…");
   const { parsed, warnings: parseWarnings } = parseAndValidateYAML(rawYaml);
   allWarnings.push(...parseWarnings);
 
   // ── STEP 4: Fetch existing data for dedup checks ─────────
-  console.log('[ResumeParser] Fetching existing user data for dedup…');
+  console.log("[ResumeParser] Fetching existing user data for dedup…");
 
   const existingUser = await prisma.user.findUnique({
     where: { id: userId },
@@ -68,7 +69,7 @@ export async function parseAndStoreResume(
   );
 
   // ── STEP 6: Persist in a transaction ─────────────────────
-  console.log('[ResumeParser] Persisting to database…');
+  console.log("[ResumeParser] Persisting to database…");
 
   await prisma.$transaction(async (tx) => {
     // Update user basic info
@@ -86,15 +87,23 @@ export async function parseAndStoreResume(
       });
     }
 
-    // Bulk-insert projects
     if (projectInputs.length > 0) {
-      await tx.projects.createMany({
-        data: projectInputs,
-      });
+      for (const projInput of projectInputs) {
+        const created = await tx.projects.create({ data: projInput });
+
+        await graphService.addUserProject(
+          created.id,
+          userId,
+          created.skills,
+          created.title,
+          created.projectUrl ?? "",
+          created.repositoryUrl ?? "",
+        );
+      }
     }
   });
 
-  console.log('[ResumeParser] Done.');
+  console.log("[ResumeParser] Done.");
 
   return {
     success: true,

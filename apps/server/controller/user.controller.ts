@@ -17,6 +17,7 @@ import {
   invalidateManyCacheKeysSafe,
   setCacheSafe,
 } from "../utils/cache";
+import { parseAndStoreResume } from "../service/resume-parser.service";
 
 const getFullUserProfileCacheKey = (userId: string) =>
   `/users/${userId}:profile:full`;
@@ -97,6 +98,11 @@ class UserController {
         uniqueFileName,
       );
 
+      const result = await parseAndStoreResume(
+        userId,
+        file.buffer,
+        file.mimetype,
+      );
       if (!fileLink) throw new Error("Upload failed");
 
       const updateResume = await prismaClient.user.update({

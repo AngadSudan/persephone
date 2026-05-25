@@ -11,9 +11,10 @@ type User = {
 };
 
 const navLinks = [
-  { href: "/", label: "HOME" },
+  { href: "/feed", label: "FEED" },
   { href: "/projects", label: "PROJECTS" },
   { href: "/jobs", label: "JOBS" },
+  { href: "/interviews", label: "INTERVIEWS" },
 ];
 
 export function WebsiteNavbar() {
@@ -59,18 +60,18 @@ export function WebsiteNavbar() {
         {/* Navbar Container */}
         <div className="fixed top-0 left-0 right-0 px-4 pt-5 pb-2 sm:px-6 w-full transform -translate-y-full transition-all duration-500 ease-out group-hover/navbar:translate-y-0">
           <div className="mx-auto max-w-[75%] min-w-[320px] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl">
-        <div className="flex h-14 items-center justify-between rounded-3xl border border-neutral-700 bg-neutral-900/80 px-4 shadow-sm sm:px-5 backdrop-blur-sm transition-all duration-300 group-hover:shadow-lg group-hover:shadow-neutral-700/20 group-hover:bg-neutral-900">
-          {/* Left: Persephone Logo */}
-          <Link
-            href="/"
-            className="flex shrink-0 items-center justify-center text-white cursor-pointer font-bold text-lg relative group/logo"
-            aria-label="Home"
-          >
-            <span className="transition-all duration-300 group-hover/logo:scale-110 group-hover/logo:rotate-2 inline-block">
-              Persephone
-            </span>
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover/logo:w-full"></span>
-          </Link>
+            <div className="flex h-14 items-center justify-between rounded-3xl border border-neutral-700 bg-neutral-900/80 px-4 shadow-sm sm:px-5 backdrop-blur-sm transition-all duration-300 group-hover:shadow-lg group-hover:shadow-neutral-700/20 group-hover:bg-neutral-900">
+              {/* Left: Persephone Logo */}
+              <Link
+                href="/"
+                className="flex shrink-0 items-center justify-center text-white cursor-pointer font-bold text-lg relative group/logo"
+                aria-label="Home"
+              >
+                <span className="transition-all duration-300 group-hover/logo:scale-110 group-hover/logo:rotate-2 inline-block">
+                  Persephone
+                </span>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover/logo:w-full"></span>
+              </Link>
 
               {/* Middle: Nav Links */}
               <nav className="hidden items-center gap-8 md:flex absolute left-1/2 transform -translate-x-1/2">

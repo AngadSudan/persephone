@@ -45,7 +45,7 @@ export default function LoginPage() {
       setData(result.data.data);
       console.log(result.data);
       toast.success("Logged in successfully!");
-      router.push("/feed");
+      router.push("/profile");
     } catch (err) {
       console.error(err);
       toast.error("Failed to login. Please try again.");

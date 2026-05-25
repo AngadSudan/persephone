@@ -152,9 +152,9 @@ export default function SideSection() {
       setData((prev) =>
         prev
           ? {
-            ...prev,
-            profileUrl: `${result.data.profileUrl}?t=${Date.now()}`,
-          }
+              ...prev,
+              profileUrl: `${result.data.profileUrl}?t=${Date.now()}`,
+            }
           : prev,
       );
       toast.success("Upload Success!", { id: toastId });
@@ -229,9 +229,9 @@ export default function SideSection() {
       setData((prev) =>
         prev
           ? {
-            ...prev,
-            ...result.data,
-          }
+              ...prev,
+              ...result.data,
+            }
           : prev,
       );
 
@@ -246,9 +246,9 @@ export default function SideSection() {
 
   const activePlatforms = data
     ? PLATFORM_CONFIG.filter(({ key }) => {
-      const value = data[key];
-      return typeof value === "string" && value.trim() !== "";
-    })
+        const value = data[key];
+        return typeof value === "string" && value.trim() !== "";
+      })
     : [];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -544,6 +544,7 @@ export default function SideSection() {
           </Link>
         </div>
       )}
+
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <ThemeSwitcher />
