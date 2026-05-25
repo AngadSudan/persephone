@@ -48,18 +48,17 @@ export default function RegisterPage() {
 
       if (!res.ok) throw new Error("Something went wrong");
 
-            const result = await res.json();
-            console.log(result);
-            toast.success("Account created successfully!");
-            router.push("/login");
-
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to create account. Please try again.");
-        } finally {
-            setLoading(false);
-        }
-    };
+      const result = await res.json();
+      console.log(result);
+      toast.success("Account created successfully!");
+      router.push("/login");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6 font-mono">
@@ -134,35 +133,35 @@ export default function RegisterPage() {
               </div>
             </div>
 
-                        {/* Password */}
-                        <div>
-                            <label className="text-sm text-gray-300">Password</label>
-                            <div className="relative mt-1">
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    {...register("password", {
-                                        required: "Password is required",
-                                        minLength: {
-                                            value: 8,
-                                            message: "Password must be at least 8 characters",
-                                        },
-                                    })}
-                                    className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white pr-12 focus:border-emerald-500"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
-                                >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                            {errors.password && (
-                                <p className="text-red-500 text-xs mt-1">
-                                    {errors.password.message}
-                                </p>
-                            )}
-                        </div>
+            {/* Password */}
+            <div>
+              <label className="text-sm text-gray-300">Password</label>
+              <div className="relative mt-1">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 8,
+                      message: "Password must be at least 8 characters",
+                    },
+                  })}
+                  className="w-full px-4 py-3 bg-black border border-gray-700 rounded-lg text-white pr-12 focus:border-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
 
             {/* Confirm Password */}
             <div>
@@ -212,29 +211,6 @@ export default function RegisterPage() {
             <Link href="/register" className="text-white hover:underline">
               Sign up
             </Link>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center my-6">
-            <div className="grow border-t border-gray-700" />
-            <span className="px-4 text-xs text-gray-500">OR</span>
-            <div className="grow border-t border-gray-700" />
-          </div>
-
-          {/* Social Login */}
-          <div className="flex justify-center">
-            <button
-              onClick={() =>
-                (window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/v1/auth/github`)
-              }
-              className="p-3 bg-black border border-gray-700 rounded-full hover:border-emerald-500 hover:scale-105 transition"
-            >
-              <img
-                src="https://www.svgrepo.com/show/512317/github-142.svg"
-                alt="GitHub"
-                className="w-6 h-6 invert"
-              />
-            </button>
           </div>
         </div>
       </div>
