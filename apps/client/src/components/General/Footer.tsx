@@ -5,20 +5,29 @@ import Link from "next/link";
 import BitwiseImage from "@/app/images/BitwiseImage.png";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import Image from "next/image";
-import logo from "../../../public/images/Logo.png"
+import logo from "../../../public/images/Logo.png";
 
 export default function Footer() {
   const Colors = useColors();
 
   return (
-    <footer
-      className="bg-neutral-950 border-t border-neutral-700 backdrop-blur-lg py-8 px-6 transition-all duration-300 font-mono"
-    >
+    <footer className="bg-neutral-950 border-t border-neutral-700 backdrop-blur-lg py-8 px-6 transition-all duration-300 font-mono">
       <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Company Info & Social Media */}
-        <div className="flex flex-col items-center sm:items-start text-center sm:text-left animate-fadeInUp" style={{ animationDelay: '0s' }}>
-          <Link href="/" className="transition-transform duration-300 hover:scale-110 inline-block mb-2">
-            <Image src={logo} alt="Logo" height={40} className="transition-all duration-300 hover:brightness-125"/>
+        <div
+          className="flex flex-col items-center sm:items-start text-center sm:text-left animate-fadeInUp"
+          style={{ animationDelay: "0s" }}
+        >
+          <Link
+            href="/"
+            className="transition-transform duration-300 hover:scale-110 inline-block mb-2"
+          >
+            <Image
+              src={logo}
+              alt="Logo"
+              height={40}
+              className="transition-all duration-300 hover:brightness-125"
+            />
           </Link>
           <p className="text-sm max-w-62.5 mb-4 text-neutral-300 font-medium">
             Learn, Code, Grow.
@@ -49,14 +58,21 @@ export default function Footer() {
         </div>
 
         {/* Navigation Links */}
-        <div className="text-center sm:text-left animate-fadeInUp" style={{ animationDelay: '0.1s' }}>
+        <div
+          className="text-center sm:text-left animate-fadeInUp"
+          style={{ animationDelay: "0.1s" }}
+        >
           <h4 className="font-bold text-lg mb-4 text-white relative inline-block group">
             Quick Links
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
           </h4>
           <ul className="space-y-2 text-neutral-400">
             {["Home", "About", "Contact"].map((item, index) => (
-              <li key={item} className="transition-all duration-300 hover:translate-x-2" style={{ animationDelay: `${0.2 + index * 0.05}s` }}>
+              <li
+                key={item}
+                className="transition-all duration-300 hover:translate-x-2"
+                style={{ animationDelay: `${0.2 + index * 0.05}s` }}
+              >
                 <a
                   href={`${item === "Home" ? "/" : item.toLowerCase()}`}
                   className="hover:text-white hover:font-semibold transition-all duration-200 relative group inline-block"
@@ -69,19 +85,30 @@ export default function Footer() {
           </ul>
         </div>
 
-        <div className="text-center sm:text-left animate-fadeInUp" style={{ animationDelay: '0.15s' }}>
+        <div
+          className="text-center sm:text-left animate-fadeInUp"
+          style={{ animationDelay: "0.15s" }}
+        >
           <h4 className="font-bold text-lg mb-4 text-white relative inline-block group">
             Logins
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
           </h4>
           <ul className="space-y-2 text-neutral-400">
-            {["Interviewer", "Interviewee"].map((item, index) => (
-              <li key={item} className="transition-all duration-300 hover:translate-x-2" style={{ animationDelay: `${0.25 + index * 0.05}s` }}>
+            {[
+              { name: "Interviewer", link: "/interviewer/login" },
+              { name: "Interviewee", link: "/login" },
+              { name: "Organization", link: "/org/login" },
+            ].map((item, index) => (
+              <li
+                key={item.name}
+                className="transition-all duration-300 hover:translate-x-2"
+                style={{ animationDelay: `${0.25 + index * 0.05}s` }}
+              >
                 <Link
-                  href={`/login`}
+                  href={item.link}
                   className="hover:text-white hover:font-semibold transition-all duration-200 relative group inline-block"
                 >
-                  <span className="relative z-10">{item}</span>
+                  <span className="relative z-10">{item.name}</span>
                   <span className="absolute left-0 bottom-0 w-0 h-px bg-white transition-all duration-300 group-hover:w-full"></span>
                 </Link>
               </li>
@@ -90,24 +117,39 @@ export default function Footer() {
         </div>
 
         {/* Contact Info */}
-        <div className="text-center sm:text-left animate-fadeInUp" style={{ animationDelay: '0.2s' }}>
+        <div
+          className="text-center sm:text-left animate-fadeInUp"
+          style={{ animationDelay: "0.2s" }}
+        >
           <h4 className="font-bold text-lg mb-4 text-white relative inline-block group">
             Contact
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-300 group-hover:w-full"></span>
           </h4>
           <ul className="space-y-2 text-neutral-400">
-            <li className="transition-all duration-300 hover:translate-x-2 hover:text-neutral-200" style={{ animationDelay: '0.3s' }}>
+            <li
+              className="transition-all duration-300 hover:translate-x-2 hover:text-neutral-200"
+              style={{ animationDelay: "0.3s" }}
+            >
               <p className="group cursor-pointer">
-                <span className="font-semibold text-neutral-300">Email:</span> support@persephone.com
+                <span className="font-semibold text-neutral-300">Email:</span>{" "}
+                support@persephone.com
               </p>
             </li>
-            <li className="transition-all duration-300 hover:translate-x-2 hover:text-neutral-200" style={{ animationDelay: '0.35s' }}>
+            <li
+              className="transition-all duration-300 hover:translate-x-2 hover:text-neutral-200"
+              style={{ animationDelay: "0.35s" }}
+            >
               <p className="group cursor-pointer">
-                <span className="font-semibold text-neutral-300">Phone:</span> +91 6284645754
+                <span className="font-semibold text-neutral-300">Phone:</span>{" "}
+                +91 6284645754
               </p>
             </li>
-            <li className="transition-all duration-300 hover:translate-x-2 hover:text-neutral-200" style={{ animationDelay: '0.4s' }}>
-              <span className="font-semibold text-neutral-300">Address:</span> Punjab India
+            <li
+              className="transition-all duration-300 hover:translate-x-2 hover:text-neutral-200"
+              style={{ animationDelay: "0.4s" }}
+            >
+              <span className="font-semibold text-neutral-300">Address:</span>{" "}
+              Punjab India
             </li>
           </ul>
         </div>
@@ -116,7 +158,7 @@ export default function Footer() {
       {/* Divider + Copyright */}
       <div
         className="mt-8 pt-3 border-t border-neutral-700 text-center text-sm text-neutral-400 animate-fadeInUp"
-        style={{ animationDelay: '0.45s' }}
+        style={{ animationDelay: "0.45s" }}
       >
         <p className="transition-colors duration-300 hover:text-neutral-200">
           &copy; {new Date().getFullYear()} Persephone. All rights reserved.

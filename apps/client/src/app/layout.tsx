@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/General/(Color Manager)/ThemeController";
 import { Toaster } from "react-hot-toast";
 import PWARegister from "@/components/General/PWARegister";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const geistMono = Nunito_Sans({
+  variable: "--font-nunito-sans",
   subsets: ["latin"],
 });
 
@@ -36,12 +31,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-color-mode="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+      <body className={`${geistMono.variable} antialiased`}>
+        <ThemeProvider>{children}</ThemeProvider>
         <PWARegister />
 
         {/* 🔔 Global Toast Notifications */}

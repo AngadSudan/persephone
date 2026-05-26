@@ -63,68 +63,70 @@ export function WebsiteNavbar() {
                 <span className="absolute -bottom-1 left-0 h-0.5 w-0 bg-[#6BFBBF] transition-all duration-300 group-hover/logo:w-full"></span>
               </Link>
               <div className="hidden rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] uppercase tracking-[0.28em] text-white/45 lg:block">
-                Developer Hiring OS
+                Developer Hiring Platform
               </div>
             </div>
 
             <nav className="hidden items-center gap-2 md:flex">
-                {navLinks.map((link, index) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="group/link relative rounded-full px-4 py-2 text-sm font-medium tracking-wide text-white/78 transition-all duration-300 hover:bg-white/7 hover:text-white"
-                    onMouseEnter={() => setHoveredIndex(index)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                  >
-                    <span className="relative inline-block transition-all duration-300 group-hover/link:-translate-y-0.5">
-                      {link.label}
-                    </span>
-                    <span
-                      className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#6BFBBF] transition-all duration-300 ${
-                        hoveredIndex === index ? "opacity-100" : "opacity-0"
-                      }`}
-                    />
-                  </Link>
-                ))}
-              </nav>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setNotificationOpen(true)}
-                  className="hidden sm:flex items-center justify-center text-white/80 relative group/notification overflow-hidden h-11 w-11 rounded-full border border-white/10 bg-white/5 transition-all duration-300 hover:border-white/20 hover:text-white"
-                  aria-label="Notifications"
-                >
-                  <Bell className="w-5 h-5 transition-all duration-300 group-hover/notification:scale-110" />
-                  {hasUnreadNotifications && (
-                    <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-                  )}
-                </button>
+              {navLinks.map((link, index) => (
                 <Link
-                  href="/profile"
-                  className="hidden sm:flex items-center justify-center text-white relative group/profile overflow-hidden h-11 w-11 rounded-full border border-white/10 bg-white/5 hover:border-white/30 transition-all duration-300"
-                  aria-label="Profile"
+                  key={link.href}
+                  href={link.href}
+                  className="group/link relative rounded-full px-4 py-2 text-sm font-medium tracking-wide text-white/78 transition-all duration-300 hover:bg-white/7 hover:text-white"
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
                 >
-                  {data?.profileUrl ? (
-                    <img
-                      src={data.profileUrl}
-                      alt="Profile"
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <User className="w-5 h-5 transition-all duration-300 group-hover/profile:scale-110" />
-                  )}
+                  <span className="relative inline-block transition-all duration-300 group-hover/link:-translate-y-0.5">
+                    {link.label}
+                  </span>
+                  <span
+                    className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#6BFBBF] transition-all duration-300 ${
+                      hoveredIndex === index ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
                 </Link>
+              ))}
+            </nav>
 
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((prev) => !prev)}
-                  className="rounded-full border border-white/10 bg-white/5 p-2 text-neutral-300 md:hidden transition-all duration-300 hover:text-white active:scale-95"
-                  aria-label="Menu"
-                >
-                  <span className="inline-block text-base">{menuOpen ? "✕" : "☰"}</span>
-                </button>
-              </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setNotificationOpen(true)}
+                className="hidden sm:flex items-center justify-center text-white/80 relative group/notification overflow-hidden h-11 w-11 rounded-full border border-white/10 bg-white/5 transition-all duration-300 hover:border-white/20 hover:text-white"
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5 transition-all duration-300 group-hover/notification:scale-110" />
+                {hasUnreadNotifications && (
+                  <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                )}
+              </button>
+              <Link
+                href="/profile"
+                className="hidden sm:flex items-center justify-center text-white relative group/profile overflow-hidden h-11 w-11 rounded-full border border-white/10 bg-white/5 hover:border-white/30 transition-all duration-300"
+                aria-label="Profile"
+              >
+                {data?.profileUrl ? (
+                  <img
+                    src={data.profileUrl}
+                    alt="Profile"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="w-5 h-5 transition-all duration-300 group-hover/profile:scale-110" />
+                )}
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setMenuOpen((prev) => !prev)}
+                className="rounded-full border border-white/10 bg-white/5 p-2 text-neutral-300 md:hidden transition-all duration-300 hover:text-white active:scale-95"
+                aria-label="Menu"
+              >
+                <span className="inline-block text-base">
+                  {menuOpen ? "✕" : "☰"}
+                </span>
+              </button>
             </div>
+          </div>
           {menuOpen ? (
             <div className="premium-panel mt-3 overflow-hidden rounded-[1.5rem] md:hidden animate-slideDown">
               <nav className="flex flex-col gap-2 px-4 py-4">
