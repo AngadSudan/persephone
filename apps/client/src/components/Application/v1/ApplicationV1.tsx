@@ -433,10 +433,10 @@ function ApplicationV1({ id }: { id: string }) {
 
       {/* ================= RIGHT SECTION ================= */}
       <div
-        className={`flex-1 p-5 rounded-xl space-y-6 ${colors.background.secondary} ${colors.border.defaultThin}`}
+        className={`flex-1 h-fit p-5 rounded-xl space-y-6 ${colors.background.secondary} ${colors.border.defaultThin}`}
       >
         <div
-          className={`"w-full flex justify-evenly text-center ${colors.text.primary}`}
+          className={`"w-full h-fit flex justify-evenly text-center overflow-y-auto ${colors.text.primary}`}
         >
           {userInfo.githubUrl && (
             <button

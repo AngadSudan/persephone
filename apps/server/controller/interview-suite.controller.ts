@@ -9,6 +9,7 @@ import {
   invalidateManyCacheKeysSafe,
   setCacheSafe,
 } from "../utils/cache";
+import cacheClient from "../utils/redis";
 
 const MAX_PAGE_SIZE = 100;
 
@@ -740,37 +741,64 @@ class InterviewSuiteController {
   async getPlatformInformation(req: Request, res: Response) {
     try {
       const { url }: { url: InterviewTypes.UrlMapping } = req.body;
-
+      console.log(url);
       let leetCodeObject;
       let leetcodeUrl: any;
 
-      if (leetcodeUrl) {
+      if (url.leetcodeUrl) {
         leetcodeUrl = url.leetcodeUrl.split("/");
         leetcodeUrl =
           leetcodeUrl[leetcodeUrl.length - 1] ||
           leetcodeUrl[leetcodeUrl.length - 2];
-        leetCodeObject =
-          await externalPlatformService.getLeetCodeInfo(leetcodeUrl);
+
+        const key = `leetcode:${leetcodeUrl}`;
+        const data = await cacheClient.getCache(key);
+        if (data) {
+          leetCodeObject = JSON.parse(data);
+        } else {
+          leetCodeObject =
+            await externalPlatformService.getLeetCodeInfo(leetcodeUrl);
+
+          await cacheClient.setCache(key, JSON.stringify(leetCodeObject));
+        }
       }
 
       let githubObject;
       let githubUrl: any;
-      if (githubUrl) {
+      if (url.githubUrl) {
         let githubUrl: any = url.githubUrl.split("/");
         githubUrl =
           githubUrl[githubUrl.length - 1] || githubUrl[githubUrl.length - 2];
-        githubObject = await externalPlatformService.getGithubInfo(githubUrl);
+
+        const key = `github:${githubUrl}`;
+        const data = await cacheClient.getCache(key);
+        if (data) {
+          githubObject = JSON.parse(data);
+        } else {
+          githubObject = await externalPlatformService.getGithubInfo(githubUrl);
+
+          await cacheClient.setCache(key, JSON.stringify(githubObject));
+        }
       }
 
       let codeforcesObject;
       let codeforcesUrl;
-      if (codeforcesUrl) {
+      if (url.codeforcesUrl) {
         let codeforcesUrl: any = url.codeforcesUrl.split("/");
         codeforcesUrl =
           codeforcesUrl[codeforcesUrl.length - 1] ||
           codeforcesUrl[codeforcesUrl.length - 2];
-        codeforcesObject =
-          await externalPlatformService.getCodeForcesInfo(codeforcesUrl);
+
+        const key = `codeforces:${githubUrl}`;
+        const data = await cacheClient.getCache(key);
+        if (data) {
+          codeforcesObject = JSON.parse(data);
+        } else {
+          codeforcesObject =
+            await externalPlatformService.getCodeForcesInfo(codeforcesUrl);
+
+          await cacheClient.setCache(key, JSON.stringify(codeforcesObject));
+        }
       }
 
       return res.status(200).json(

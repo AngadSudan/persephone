@@ -118,7 +118,7 @@ export default function JobListPanel({ jobs }: JobListPanelProps) {
     "h-full w-full appearance-none bg-transparent pr-8 text-sm text-white outline-none";
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-y-auto">
       <div className="border-b border-white/10 p-4 sm:p-5">
         <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
@@ -295,7 +295,7 @@ export default function JobListPanel({ jobs }: JobListPanelProps) {
         </div>
       </div>
 
-      <div className="premium-scroll flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+      <div className="premium-scroll flex-1 space-y-4 p-4 sm:p-5">
         {filteredJobs.map((job) => (
           <JobCard key={job.id} job={job} />
         ))}
