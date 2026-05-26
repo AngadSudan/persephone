@@ -41,7 +41,7 @@ export default function OrgRegisterPage() {
       const result = await res.json();
       toast.success("Organization registered successfully!");
       console.log("Org registered:", result);
-      router.push("/org-dashboard");
+      router.push("/org/login");
     } catch (err) {
       console.error(err);
       toast.error("Failed to register organization. Please try again.");
