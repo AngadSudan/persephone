@@ -1,5 +1,4 @@
 import { useColors } from "@/components/General/(Color Manager)/useColors";
-import Sidebar from "@/components/General/Sidebar";
 import { useInterviewer } from "@/store/interviewer-store";
 import { useOrgStore } from "@/store/org-store";
 import axiosInstance from "@/utils/axiosInstance";
@@ -8,6 +7,7 @@ import DisplaySuites from "./DisplaySuites";
 import Filter from "./Filter";
 import { Suite, SuiteFilters } from "@/utils/type";
 import { useRef } from "react";
+import SuiteSidebar from "./SuiteSidebar";
 
 function AllSuitesV1() {
   const themes = useColors();
@@ -115,7 +115,7 @@ function AllSuitesV1() {
   return (
     <div className={`h-screen flex gap-4 ${themes.background.secondary}`}>
       <div className="w-72 h-screen">
-        <Sidebar />
+        <SuiteSidebar />
       </div>
       <div className="w-full">
         <Filter filters={filters} setFilters={setFilters} />
