@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Pencil } from "lucide-react";
 import { getWishlistById } from "@/api/wishlist/get-wishlist-by-id";
-import { updateWishlist } from "@/api/wishlist/update-wishlist";
 import { removeUserFromWishlist } from "@/api/wishlist/remove-user-from-wishlist";
 import type { WishlistDetails } from "@/api/wishlist/types";
 import { useColors } from "@/components/General/(Color Manager)/useColors";
 import WishlistHeader from "./WishlistHeader";
 import WishlistUsersTable from "./WishlistUsersTable";
-import RenameWishlistModal from "./RenameWishlistModal";
+import WishlistUserPickerModal from "./WishlistUserPickerModal";
 
 type WishlistDetailClientProps = {
     wishlistId: string;
@@ -22,7 +20,7 @@ export default function WishlistDetailClient({
     const Colors = useColors();
     const [wishlist, setWishlist] = useState<WishlistDetails | null>(null);
     const [loading, setLoading] = useState(true);
-    const [openRename, setOpenRename] = useState(false);
+    const [openAddUsers, setOpenAddUsers] = useState(false);
     const [removingId, setRemovingId] = useState<string | null>(null);
 
     const fetchWishlist = async () => {
@@ -41,18 +39,6 @@ export default function WishlistDetailClient({
     useEffect(() => {
         fetchWishlist();
     }, [wishlistId]);
-
-    const handleRename = async (name: string) => {
-        try {
-            await updateWishlist(wishlistId, { name });
-            toast.success("Wishlist name updated.");
-            await fetchWishlist();
-        } catch (error) {
-            console.error(error);
-            toast.error("Could not update wishlist name.");
-            throw error;
-        }
-    };
 
     const handleRemoveUser = async (entryId: string) => {
         try {
@@ -75,20 +61,19 @@ export default function WishlistDetailClient({
     };
 
     return (
-        <div className="space-y-6">
+        <div className={`space-y-6 p-4 ${Colors.background.primary}`}>
             <WishlistHeader
-                title={wishlist?.name || "Wishlist Details"}
-                subtitle={wishlist?.description || "View users in this wishlist"}
+                title={wishlist?.name || "Wishlist Users"}
+                subtitle="Search, add, and remove users from this wishlist."
             />
 
-            <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-end gap-3">
                 <button
-                    onClick={() => setOpenRename(true)}
+                    onClick={() => setOpenAddUsers(true)}
                     disabled={!wishlist}
-                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 ${Colors.border.defaultThin} ${Colors.text.primary} ${Colors.properties.interactiveButton} disabled:opacity-50`}
+                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 font-semibold ${Colors.background.special} ${Colors.text.inverted} disabled:opacity-50 ${Colors.properties.interactiveButton}`}
                 >
-                    <Pencil size={15} />
-                    Edit Wishlist Name
+                    Add Users
                 </button>
             </div>
 
@@ -104,11 +89,11 @@ export default function WishlistDetailClient({
                 />
             )}
 
-            <RenameWishlistModal
-                open={openRename && !!wishlist}
-                initialName={wishlist?.name || ""}
-                onClose={() => setOpenRename(false)}
-                onSave={handleRename}
+            <WishlistUserPickerModal
+                open={openAddUsers && !!wishlist}
+                wishlistId={wishlistId}
+                onClose={() => setOpenAddUsers(false)}
+                onAdded={fetchWishlist}
             />
         </div>
     );
