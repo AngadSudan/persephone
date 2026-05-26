@@ -206,7 +206,7 @@ function InterviewSuiteV1({ id }: { id: string }) {
               params.set("tab", "round");
               router.push(`?${params.toString()}`);
             }}
-            className={`${colors.text.primary} ${colors.border.defaultThin} w-1/2 cursor-pointer ${
+            className={`${colors.text.inverted} ${colors.border.defaultThin} w-1/2 cursor-pointer ${
               tab === "round"
                 ? colors.background.special
                 : colors.background.primary

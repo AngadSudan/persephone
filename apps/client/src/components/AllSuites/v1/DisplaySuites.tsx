@@ -4,7 +4,7 @@ import { Suite } from "@/utils/type";
 
 function DisplaySuites({ suites }: { suites: Suite[] }) {
   return (
-    <div className="grid grid-cols-3 mt-4 overflow-auto">
+    <div className="grid grid-cols-3 gap-1 mt-4 overflow-auto">
       {suites.map((suite, index) => {
         return <SuiteCard key={index} info={suite} />;
       })}

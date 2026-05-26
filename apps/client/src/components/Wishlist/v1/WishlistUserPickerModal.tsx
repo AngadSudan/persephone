@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { Loader2, Search, UserPlus, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { createWishlistEntry } from "@/api/wishlist/create-wishlist-entry";
@@ -27,11 +26,6 @@ export default function WishlistUserPickerModal({
   const [users, setUsers] = useState<WishlistUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -92,16 +86,16 @@ export default function WishlistUserPickerModal({
     }
   };
 
-  if (!open || !mounted) return null;
+  if (!open) return null;
 
-  return createPortal(
+  return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 py-6 backdrop-blur-sm"
+      className={`absolute inset-0 z-50 flex items-center justify-center p-4 ${Colors.background.secondary}`}
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className={`w-full max-w-3xl rounded-2xl border p-6 shadow-2xl ${Colors.background.primary} ${Colors.border.specialThin}`}
+        className={`w-full max-w-3xl rounded-2xl p-6 ${Colors.background.primary} ${Colors.border.specialThin}`}
       >
         <div className="mb-5 flex items-center justify-between gap-4">
           <div>
@@ -188,7 +182,6 @@ export default function WishlistUserPickerModal({
           )}
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 }
