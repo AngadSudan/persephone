@@ -126,13 +126,13 @@ app.get("/health", async (req, res) => {
   });
 });
 app.use("/api/v1/auth", authRouter);
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
-  }
-}
+// declare global {
+//   namespace Express {
+//     interface Request {
+//       user?: User | JwtPayload;
+//     }
+//   }
+// }
 // routes
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/interviewers", interviewerRouter);
